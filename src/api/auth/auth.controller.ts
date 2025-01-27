@@ -17,6 +17,8 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { EmailService } from '../../email/email.service';
 import { ValidateUserDto } from './dto/validate-user-dto';
 import { User } from '../../entities/user.entity';
+import { Request } from 'express';
+import { VerifyEmailDto } from './dto/verify-email-dto';
 
 @Controller('auth')
 export class AuthController {
@@ -66,9 +68,21 @@ export class AuthController {
     return res.json({ message: 'User is logged out.' });
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('who-am-i')
-  getProfile(@Req() req: any) {
-    return req.user;
+  async getProfile(@Req() req: Request) {
+    const token = req.cookies['access_token'];
+
+    return await this.authService.whoAmI(token);
+  }
+
+  @Post('verify-email')
+  async verifyEmail(
+    @Body() verifyEmailDto: VerifyEmailDto,
+    @Req() req: Request,
+  ) {
+    const token = req.cookies['access_token'];
+    const pin = verifyEmailDto.pin;
+    console.log(pin);
+    return await this.authService.verifyEmail(token, verifyEmailDto);
   }
 }

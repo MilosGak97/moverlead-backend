@@ -69,4 +69,53 @@ export class User {
   @Type(() => String)
   @Column({ nullable: true })
   password_passcode?: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @Type(() => String)
+  @Column({ nullable: true })
+  address: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @Type(() => String)
+  @Column({ nullable: true })
+  address2: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @Type(() => String)
+  @Column({ nullable: true })
+  city: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @Type(() => String)
+  @Column({ nullable: true })
+  state: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @Type(() => String)
+  @Column({ nullable: true })
+  zip: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @Type(() => String)
+  @Column({ nullable: true })
+  website: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @Type(() => String)
+  @Column({ nullable: true })
+  phone_number: string;
 }

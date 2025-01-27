@@ -14,6 +14,13 @@ async function bootstrap() {
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe());
 
+  app.enableCors({
+    origin: 'http://localhost:3000', // Allow requests from any origin
+    credentials: true, // Allow cookies to be sent
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS', // Allowed HTTP methods
+    allowedHeaders: 'Content-Type, Authorization', // Allowed headers
+  });
+
   const config = new DocumentBuilder()
     .setTitle('MoverLead Documentation')
     .setDescription('MoverLead Backend documentation for API references')

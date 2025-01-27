@@ -1,9 +1,16 @@
 import { DataSource, Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
-import { BadRequestException, HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+} from '@nestjs/common';
 import { RegisterDto } from '../api/auth/dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import { ValidateUserDto } from '../api/auth/dto/validate-user-dto';
+import { VerifyEmailDto } from '../api/auth/dto/verify-email-dto';
+import { MessageResponseDto } from '../dto/message-response.dto';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
@@ -66,6 +73,31 @@ export class UserRepository extends Repository<User> {
       id: user.id,
       email: registerDto.email,
       email_passcode: email_passcode,
+    };
+  }
+
+  async verifyEmail(
+    verifyEmailDto: VerifyEmailDto,
+    userId: string,
+  ): Promise<MessageResponseDto> {
+    const user = await this.findOne({ where: { id: userId } });
+    if (!user) {
+      console.log(
+        'User is not found in verify email function in user repository.',
+      );
+      throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
+    }
+    const pin: string = verifyEmailDto.pin;
+    const passcodeMatch = await bcrypt.compare(pin, user.email_passcode);
+    if (!passcodeMatch) {
+      throw new HttpException('Passcode is not valid.', HttpStatus.BAD_REQUEST);
+    }
+    user.is_verified = true;
+    user.email_passcode = null;
+    await this.save(user);
+
+    return {
+      message: 'Email is verified.',
     };
   }
 }
