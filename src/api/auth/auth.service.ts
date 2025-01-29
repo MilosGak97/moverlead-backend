@@ -26,18 +26,18 @@ export class AuthService {
 
     res.cookie('access_token', access_token, {
       httpOnly: true,
-      secure: false, //  used for lcoalhost, not secured
+      secure: true, //  used for lcoalhost, not secured
       maxAge: 5 * 60 * 60 * 1000, // 5 hours
-      sameSite: 'lax', // used for lcoalhost, not secured
+      sameSite: 'None', // used for lcoalhost, not secured
     });
 
     console.log('ACCESS TOKEN: ' + access_token);
 
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
-      secure: false, // used for lcoalhost, not secured
+      secure: true, // used for lcoalhost, not secured
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: 'lax', // used for lcoalhost, not secured
+      sameSite: 'None', // used for lcoalhost, not secured
     });
 
     console.log('REFRESH TOKEN: ' + refresh_token);
