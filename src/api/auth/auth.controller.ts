@@ -54,6 +54,7 @@ export class AuthController {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for refresh token
     });
 
+    console.log('ACCESS TOKEN IN LOGIN: ' + access_token);
     // await this.authService.setLoginCookies(user.email, user.id, res);
     return res.json({ message: 'Logged in' });
   }
