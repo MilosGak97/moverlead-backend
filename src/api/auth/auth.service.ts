@@ -41,11 +41,20 @@ export class AuthService {
     });
     const isProduction = process.env.NODE_ENV === 'production';
 
+    // Set the HTTP-only cookie for the access token
     res.cookie('access_token', access_token, {
       httpOnly: true,
       secure: true, // Use secure cdeokies in production
       sameSite: 'none', // Adjust as necessary
       maxAge: 60 * 60 * 1000, // 1 hour for access token
+    });
+
+    // Set the HTTP-only cookie for the refresh token
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: true, // Use secure cookies in production
+      sameSite: 'none', // Adjust as necessary
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for refresh token
     });
     /*
         res.cookie('access_token', access_token, {
@@ -54,15 +63,7 @@ export class AuthService {
           sameSite: isProduction ? 'None' : 'Lax',
           maxAge: 5 * 60 * 60 * 1000, // 5 hours
         });
-    */
-    console.log('ACCESS TOKEN: ' + access_token);
-    res.cookie('refresh_token', refresh_token, {
-      httpOnly: true,
-      secure: true, // Use secure cookies in production
-      sameSite: 'none', // Adjust as necessary
-      maxAge: 24 * 60 * 60 * 1000, // 1 hour for access token
-    });
-    /*
+    
         res.cookie('refresh_token', refresh_token, {
           httpOnly: true,
           secure: isProduction ? true : false,

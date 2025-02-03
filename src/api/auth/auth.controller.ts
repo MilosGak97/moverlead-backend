@@ -33,6 +33,7 @@ export class AuthController {
   @ApiOkResponse({ type: MessageResponseDto })
   async login(@Body() validateUserDto: ValidateUserDto, @Res() res: any) {
     const user: User = await this.authService.validateUser(validateUserDto);
+    /*
     const { access_token, refresh_token } = await this.authService.login(
       user.email,
       user.id,
@@ -53,9 +54,11 @@ export class AuthController {
       sameSite: 'none', // Adjust as necessary
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for refresh token
     });
-
     console.log('ACCESS TOKEN IN LOGIN: ' + access_token);
-    // await this.authService.setLoginCookies(user.email, user.id, res);
+    
+    */
+
+    await this.authService.setLoginCookies(user.email, user.id, res);
     return res.json({ message: 'Logged in' });
   }
 
