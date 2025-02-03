@@ -39,8 +39,7 @@ export class AuthService {
     const refresh_token: string = this.jwtService.sign(payload, {
       expiresIn: '7d',
     });
-    const isProduction = process.env.NODE_ENV === 'production';
-
+    /*
     // Set the HTTP-only cookie for the access token
     res.cookie('access_token', access_token, {
       httpOnly: true,
@@ -56,21 +55,23 @@ export class AuthService {
       sameSite: 'none', // Adjust as necessary
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for refresh token
     });
-    /*
-        res.cookie('access_token', access_token, {
-          httpOnly: true,
-          secure: isProduction ? true : false,
-          sameSite: isProduction ? 'None' : 'Lax',
-          maxAge: 5 * 60 * 60 * 1000, // 5 hours
-        });
-    
-        res.cookie('refresh_token', refresh_token, {
-          httpOnly: true,
-          secure: isProduction ? true : false,
-          sameSite: isProduction ? 'None' : 'Lax',
-          maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
-    */
+*/
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    res.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'None' : 'Lax',
+      maxAge: 5 * 60 * 60 * 1000, // 5 hours
+    });
+
+    res.cookie('refresh_token', refresh_token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'None' : 'Lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
     console.log('REFRESH TOKEN: ' + refresh_token);
   }
 

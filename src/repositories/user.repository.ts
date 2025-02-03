@@ -11,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { ValidateUserDto } from '../api/auth/dto/validate-user-dto';
 import { VerifyEmailDto } from '../api/auth/dto/verify-email-dto';
 import { MessageResponseDto } from '../dto/message-response.dto';
+import { GetCompanyResponseDto } from '../api/settings/dto/get-company-response.dto';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
@@ -101,8 +102,21 @@ export class UserRepository extends Repository<User> {
     };
   }
 
+  async getCompany(userId: string): Promise<GetCompanyResponseDto> {
+    const user = await this.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
+    }
 
-  async getProperties(){
-
+    return {
+      company_name: user.company_name,
+      address: user.address,
+      address2: user.address2,
+      city: user.city,
+      state: user.state,
+      zip: user.zip,
+      website: user.website,
+      phone_number: user.phone_number,
+    };
   }
 }
