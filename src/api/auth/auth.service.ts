@@ -24,24 +24,26 @@ export class AuthService {
     const refresh_token: string = this.jwtService.sign(payload, {
       expiresIn: '7d',
     });
+    const isProduction = process.env.NODE_ENV === 'production';
 
     res.cookie('access_token', access_token, {
       httpOnly: true,
-      secure: true, //  used for lcoalhost, not secured
+      secure: isProduction, // Secure only in production
       maxAge: 5 * 60 * 60 * 1000, // 5 hours
-      sameSite: 'None', // used for lcoalhost, not secured
+      sameSite: isProduction ? 'None' : 'Lax', // 'None' for cross-site, 'Lax' for local dev
     });
 
     console.log('ACCESS TOKEN: ' + access_token);
 
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
-      secure: true, // used for lcoalhost, not secured
+      secure: isProduction, // Secure only in production
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: 'None', // used for lcoalhost, not secured
+      sameSite: isProduction ? 'None' : 'Lax',
     });
 
     console.log('REFRESH TOKEN: ' + refresh_token);
+
   }
 
   async validateUser(validateUserDto: ValidateUserDto) {
