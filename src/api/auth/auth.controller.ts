@@ -39,7 +39,7 @@ export class AuthController {
     );
 
     // Set the HTTP-only cookie for the access token
-    res.cookie('accessToken', access_token, {
+    res.cookie('access_token', access_token, {
       httpOnly: true,
       secure: true, // Use secure cdeokies in production
       sameSite: 'none', // Adjust as necessary
@@ -47,7 +47,7 @@ export class AuthController {
     });
 
     // Set the HTTP-only cookie for the refresh token
-    res.cookie('refreshToken', refresh_token, {
+    res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
       secure: true, // Use secure cookies in production
       sameSite: 'none', // Adjust as necessary
