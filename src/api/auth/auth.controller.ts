@@ -94,7 +94,6 @@ export class AuthController {
   @Get('who-am-i')
   async getProfile(@Req() req: Request): Promise<WhoAmIResponse> {
     const token = req.cookies['access_token'];
-
     return await this.authService.whoAmI(token);
   }
 
