@@ -15,10 +15,10 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
 
   app.enableCors({
-    origin: 'https://www.moverlead.com', // Allow requests from any origin
-    credentials: true, // Allow cookies to be sent
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS', // Allowed HTTP methods
-    allowedHeaders: 'Content-Type, Authorization', // Allowed headers
+    origin: ['https://www.moverlead.com', 'http://localhost:3000'],
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization',
   });
 
   const config = new DocumentBuilder()
@@ -29,6 +29,11 @@ async function bootstrap() {
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
+
+  // Expose OpenAPI JSON at /api-json
+  app.getHttpAdapter().get('api-json', (req, res) => {
+    res.json(document);
+  });
 
   await app.listen(process.env.PORT ?? 3002);
 }

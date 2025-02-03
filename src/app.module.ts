@@ -6,6 +6,7 @@ import { UsersModule } from './api/users/users.module';
 import { EmailModule } from './email/email.module';
 import { Property } from './entities/property.entity';
 import { PropertiesModule } from './api/properties/properties.module';
+import { SettingsModule } from './api/settings/settings.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { PropertiesModule } from './api/properties/properties.module';
     UsersModule,
     EmailModule,
     PropertiesModule,
+    SettingsModule,
   ],
 })
 export class AppModule {}
