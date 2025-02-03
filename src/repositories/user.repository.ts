@@ -12,6 +12,8 @@ import { ValidateUserDto } from '../api/auth/dto/validate-user-dto';
 import { VerifyEmailDto } from '../api/auth/dto/verify-email-dto';
 import { MessageResponseDto } from '../dto/message-response.dto';
 import { GetCompanyResponseDto } from '../api/settings/dto/get-company-response.dto';
+import { ChangePasswordDto } from '../api/settings/dto/change-password.dto';
+import { PatchCompanyDto } from '../api/settings/dto/patch-company.dto';
 
 @Injectable()
 export class UserRepository extends Repository<User> {
@@ -117,6 +119,53 @@ export class UserRepository extends Repository<User> {
       zip: user.zip,
       website: user.website,
       phone_number: user.phone_number,
+    };
+  }
+
+  // Change password of user function
+  async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<MessageResponseDto> {
+    const user = await this.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
+    }
+    const { password, new_password, new_password_repeat } = changePasswordDto;
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      throw new HttpException(
+        'Your old password is not correct',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    if (new_password !== new_password_repeat) {
+      throw new HttpException(
+        'Password is not matching',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    user.password = await bcrypt.hash(new_password, 10);
+    await this.save(user);
+    return {
+      message: 'Password changed successfully.',
+    };
+  }
+
+  async patchCompany(
+    userId: string,
+    patchCompanyDto: PatchCompanyDto,
+  ): Promise<MessageResponseDto> {
+    const user = await this.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
+    }
+
+    Object.assign(user, patchCompanyDto);
+    await this.save(user);
+    return {
+      message: 'Successfully updated changed successfully.',
     };
   }
 }
