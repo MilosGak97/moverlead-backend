@@ -15,7 +15,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
 
   app.enableCors({
-    origin: ['https://www.moverlead.com', 'http://localhost:3000'],
+    origin: ['https://www.moverlead.com', 'https://localhost:3000'],
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Authorization',
