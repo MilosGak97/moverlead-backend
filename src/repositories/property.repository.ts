@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
 import { Property } from '../entities/property.entity';
-import { GetPropertiesDto } from '../api/listings/dto/get-properties.dto';
+import { GetPropertiesDto } from '../api/properties/dto/get-properties.dto';
+import { FilteringActionDto } from '../api/properties/dto/filtering-action.dto';
 
 @Injectable()
 export class PropertyRepository extends Repository<Property> {
@@ -75,5 +76,30 @@ export class PropertyRepository extends Repository<Property> {
       });
     }
     return await queryBuilder.getMany();
+  }
+
+  async filtering(userId: string) {
+    const queryBuilder = this.createQueryBuilder('properties')
+      .leftJoinAndSelect('properties.users', 'user')
+      .where('user.id = :userId', { userId })
+      .andWhere(
+        '(properties.filtered_status IS NULL OR properties.filtered_status = :status)',
+        { status: 'NOT_FILTERED' },
+      );
+
+    return await queryBuilder.getManyAndCount();
+  }
+
+  async filteringAction(id: string, filteringActionDto: FilteringActionDto) {
+    const property = await this.findOne({ where: { id } });
+    if (!property) {
+      throw new HttpException('Property not found', HttpStatus.BAD_REQUEST);
+    }
+    property.filtered_status = filteringActionDto.action;
+    property.filtered_status_date = new Date();
+    await this.save(property);
+    return {
+      message: 'Filtering successfully done',
+    };
   }
 }

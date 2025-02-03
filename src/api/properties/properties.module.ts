@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ListingsController } from './listings.controller';
-import { ListingsService } from './listings.service';
+import { PropertiesController } from './properties.controller';
+import { PropertiesService } from './properties.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Property } from '../../entities/property.entity';
 import { User } from '../../entities/user.entity';
@@ -9,7 +9,7 @@ import { UserRepository } from '../../repositories/user.repository';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Property, User])],
-  controllers: [ListingsController],
-  providers: [ListingsService, PropertyRepository, UserRepository],
+  controllers: [PropertiesController],
+  providers: [PropertiesService, PropertyRepository, UserRepository],
 })
-export class ListingsModule {}
+export class PropertiesModule {}

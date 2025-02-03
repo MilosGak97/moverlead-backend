@@ -11,7 +11,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsDate, IsOptional } from 'class-validator';
 import { User } from './user.entity';
-import { FilteredStatus } from "../api/enums/filtered-status.enum";
+import { FilteredStatus } from '../api/enums/filtered-status.enum';
 
 @Entity('properties')
 export class Property {
@@ -125,6 +125,12 @@ export class Property {
   @IsOptional()
   @Column({ nullable: true })
   filtered_status: FilteredStatus;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDate()
+  @Column({ nullable: true })
+  filtered_status_date: Date;
 
   @CreateDateColumn()
   createdAt: Date;
