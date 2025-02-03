@@ -7,7 +7,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 import { UserId } from '../auth/user-id.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PropertiesService } from './properties.service';
@@ -15,6 +15,7 @@ import { GetPropertiesDto } from './dto/get-properties.dto';
 import { Property } from '../../entities/property.entity';
 import { FilteringActionDto } from './dto/filtering-action.dto';
 import { MessageResponseDto } from '../../dto/message-response.dto';
+import { FilteringResponseDto } from './dto/filtering-response.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('properties')
@@ -23,6 +24,7 @@ export class PropertiesController {
 
   @Get('listings')
   @ApiOperation({ summary: 'Show Listings' })
+  @ApiOkResponse({ type: [Property] })
   async listings(
     @Query() getPropertiesDto: GetPropertiesDto,
     @UserId() userId: string,
@@ -32,7 +34,8 @@ export class PropertiesController {
 
   @Get('filtering')
   @ApiOperation({ summary: 'Listings / show property that is not filtered' })
-  async filtering(@UserId() userId: string) {
+  @ApiOkResponse({ type: FilteringResponseDto })
+  async filtering(@UserId() userId: string): Promise<FilteringResponseDto> {
     return this.propertiesService.filtering(userId);
   }
 

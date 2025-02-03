@@ -3,6 +3,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Property } from '../entities/property.entity';
 import { GetPropertiesDto } from '../api/properties/dto/get-properties.dto';
 import { FilteringActionDto } from '../api/properties/dto/filtering-action.dto';
+import { FilteringResponseDto } from '../api/properties/dto/filtering-response.dto';
 
 @Injectable()
 export class PropertyRepository extends Repository<Property> {
@@ -78,7 +79,7 @@ export class PropertyRepository extends Repository<Property> {
     return await queryBuilder.getMany();
   }
 
-  async filtering(userId: string) {
+  async filtering(userId: string): Promise<FilteringResponseDto> {
     const queryBuilder = this.createQueryBuilder('properties')
       .leftJoinAndSelect('properties.users', 'user')
       .where('user.id = :userId', { userId })
@@ -87,7 +88,11 @@ export class PropertyRepository extends Repository<Property> {
         { status: 'NOT_FILTERED' },
       );
 
-    return await queryBuilder.getManyAndCount();
+    const [properties, count] = await queryBuilder.getManyAndCount();
+    return {
+      properties,
+      count,
+    };
   }
 
   async filteringAction(id: string, filteringActionDto: FilteringActionDto) {
