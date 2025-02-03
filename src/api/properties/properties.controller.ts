@@ -41,6 +41,7 @@ export class PropertiesController {
 
   @Post('filtering/:id')
   @ApiOperation({ summary: 'Action for property filtering' })
+  @ApiOkResponse({ type: MessageResponseDto })
   async filteringAction(
     @Param('id') id: string,
     @Body() filteringActionDto: FilteringActionDto,
