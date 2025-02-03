@@ -56,13 +56,13 @@ export class AuthController {
     res.clearCookie('access_token', {
       httpOnly: true,
       secure: true, // Secure only in production
-      sameSite: 'none',
+      sameSite: 'None',
     });
 
     res.clearCookie('refresh_token', {
       httpOnly: true,
       secure: true, // Secure only in production
-      sameSite: 'none',
+      sameSite: 'None',
     });
 
     return res.json({ message: 'User is logged out.' });

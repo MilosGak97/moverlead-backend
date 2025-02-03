@@ -100,4 +100,9 @@ export class UserRepository extends Repository<User> {
       message: 'Email is verified.',
     };
   }
+
+
+  async getProperties(){
+
+  }
 }

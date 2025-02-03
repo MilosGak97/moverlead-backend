@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -8,6 +8,7 @@ import {
   IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { Property } from './property.entity';
 
 @Entity('users')
 export class User {
@@ -118,4 +119,9 @@ export class User {
   @Type(() => String)
   @Column({ nullable: true })
   phone_number: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @ManyToMany(() => Property, (property) => property.users)
+  properties: Promise<Property[]>;
 }

@@ -4,6 +4,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { UsersModule } from './api/users/users.module';
 import { EmailModule } from './email/email.module';
+import { Property } from './entities/property.entity';
+import { ListingsModule } from './api/listings/listings.module';
 
 @Module({
   imports: [
@@ -19,10 +21,11 @@ import { EmailModule } from './email/email.module';
       ssl: {
         rejectUnauthorized: false, // Use true if you have the certificate
       },
-      entities: [User],
+      entities: [User, Property],
     }),
     UsersModule,
     EmailModule,
+    ListingsModule,
   ],
 })
 export class AppModule {}
