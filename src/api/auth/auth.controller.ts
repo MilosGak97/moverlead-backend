@@ -54,18 +54,19 @@ export class AuthController {
   @Delete('logout')
   @ApiOperation({ summary: 'Logout' })
   async logout(@Res() res: any): Promise<{ message: string }> {
+    const isProduction = process.env.NODE_ENV === 'production';
+
     res.clearCookie('access_token', {
       httpOnly: true,
-      secure: true, // Secure only in production
-      sameSite: 'None',
+      secure: isProduction, // Secure only in production
+      sameSite: isProduction ? 'None' : 'Lax', // 'None' for cross-site cookies, 'Lax' for local dev
     });
 
     res.clearCookie('refresh_token', {
       httpOnly: true,
-      secure: true, // Secure only in production
-      sameSite: 'None',
+      secure: isProduction, // Secure only in production
+      sameSite: isProduction ? 'None' : 'Lax',
     });
-
     return res.json({ message: 'User is logged out.' });
   }
 
