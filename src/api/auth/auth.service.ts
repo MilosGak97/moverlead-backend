@@ -16,6 +16,21 @@ export class AuthService {
     private readonly emailService: EmailService,
   ) {}
 
+  async login(email: string, id: string) {
+    const payload = { email: email, id: id };
+    const access_token: string = this.jwtService.sign(payload, {
+      expiresIn: '5h',
+    });
+    const refresh_token: string = this.jwtService.sign(payload, {
+      expiresIn: '7d',
+    });
+
+    return {
+      access_token: access_token,
+      refresh_token: refresh_token,
+    };
+  }
+
   async setLoginCookies(email: string, id: string, @Res() res: any) {
     const payload = { email: email, id: id };
     const access_token: string = this.jwtService.sign(payload, {
@@ -43,7 +58,7 @@ export class AuthService {
     console.log('ACCESS TOKEN: ' + access_token);
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
-      secure: true, // Use secure cdeokies in production
+      secure: true, // Use secure cookies in production
       sameSite: 'none', // Adjust as necessary
       maxAge: 24 * 60 * 60 * 1000, // 1 hour for access token
     });

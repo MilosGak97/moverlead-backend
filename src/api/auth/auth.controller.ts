@@ -33,7 +33,28 @@ export class AuthController {
   @ApiOkResponse({ type: MessageResponseDto })
   async login(@Body() validateUserDto: ValidateUserDto, @Res() res: any) {
     const user: User = await this.authService.validateUser(validateUserDto);
-    await this.authService.setLoginCookies(user.email, user.id, res);
+    const { access_token, refresh_token } = await this.authService.login(
+      user.email,
+      user.id,
+    );
+
+    // Set the HTTP-only cookie for the access token
+    res.cookie('accessToken', access_token, {
+      httpOnly: true,
+      secure: true, // Use secure cdeokies in production
+      sameSite: 'none', // Adjust as necessary
+      maxAge: 60 * 60 * 1000, // 1 hour for access token
+    });
+
+    // Set the HTTP-only cookie for the refresh token
+    res.cookie('refreshToken', refresh_token, {
+      httpOnly: true,
+      secure: true, // Use secure cookies in production
+      sameSite: 'none', // Adjust as necessary
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days for refresh token
+    });
+
+    // await this.authService.setLoginCookies(user.email, user.id, res);
     return res.json({ message: 'Logged in' });
   }
 
