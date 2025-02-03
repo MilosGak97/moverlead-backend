@@ -6,6 +6,7 @@ import { EmailService } from '../../email/email.service';
 import { ValidateUserDto } from './dto/validate-user-dto';
 import { VerifyEmailDto } from './dto/verify-email-dto';
 import { MessageResponseDto } from '../../dto/message-response.dto';
+import { WhoAmIResponse } from "./dto/who-am-i.response.dto";
 
 @Injectable()
 export class AuthService {
@@ -61,7 +62,7 @@ export class AuthService {
     return await this.userRepository.find();
   }
 
-  async whoAmI(token: string): Promise<any> {
+  async whoAmI(token: string): Promise<WhoAmIResponse> {
     if (!token) {
       throw new HttpException('Token not provided', HttpStatus.UNAUTHORIZED);
     }

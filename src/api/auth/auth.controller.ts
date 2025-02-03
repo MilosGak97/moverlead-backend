@@ -19,6 +19,7 @@ import { ValidateUserDto } from './dto/validate-user-dto';
 import { User } from '../../entities/user.entity';
 import { Request } from 'express';
 import { VerifyEmailDto } from './dto/verify-email-dto';
+import { WhoAmIResponse } from './dto/who-am-i.response.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -69,7 +70,7 @@ export class AuthController {
   }
 
   @Get('who-am-i')
-  async getProfile(@Req() req: Request) {
+  async getProfile(@Req() req: Request): Promise<WhoAmIResponse> {
     const token = req.cookies['access_token'];
 
     return await this.authService.whoAmI(token);
