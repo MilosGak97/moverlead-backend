@@ -6,7 +6,7 @@ import { EmailService } from '../../email/email.service';
 import { ValidateUserDto } from './dto/validate-user-dto';
 import { VerifyEmailDto } from './dto/verify-email-dto';
 import { MessageResponseDto } from '../../dto/message-response.dto';
-import { WhoAmIResponse } from "./dto/who-am-i.response.dto";
+import { WhoAmIResponse } from './dto/who-am-i.response.dto';
 
 @Injectable()
 export class AuthService {
@@ -28,22 +28,34 @@ export class AuthService {
 
     res.cookie('access_token', access_token, {
       httpOnly: true,
-      secure: isProduction, // Secure only in production
-      maxAge: 5 * 60 * 60 * 1000, // 5 hours
-      sameSite: isProduction ? 'None' : 'Lax', // 'None' for cross-site, 'Lax' for local dev
+      secure: true, // Use secure cdeokies in production
+      sameSite: 'none', // Adjust as necessary
+      maxAge: 60 * 60 * 1000, // 1 hour for access token
     });
-
+    /*
+        res.cookie('access_token', access_token, {
+          httpOnly: true,
+          secure: isProduction ? true : false,
+          sameSite: isProduction ? 'None' : 'Lax',
+          maxAge: 5 * 60 * 60 * 1000, // 5 hours
+        });
+    */
     console.log('ACCESS TOKEN: ' + access_token);
-
     res.cookie('refresh_token', refresh_token, {
       httpOnly: true,
-      secure: isProduction, // Secure only in production
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-      sameSite: isProduction ? 'None' : 'Lax',
+      secure: true, // Use secure cdeokies in production
+      sameSite: 'none', // Adjust as necessary
+      maxAge: 24 * 60 * 60 * 1000, // 1 hour for access token
     });
-
+    /*
+        res.cookie('refresh_token', refresh_token, {
+          httpOnly: true,
+          secure: isProduction ? true : false,
+          sameSite: isProduction ? 'None' : 'Lax',
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+    */
     console.log('REFRESH TOKEN: ' + refresh_token);
-
   }
 
   async validateUser(validateUserDto: ValidateUserDto) {
