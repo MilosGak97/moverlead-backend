@@ -3,7 +3,7 @@ import { FilteredStatus } from '../../../enums/filtered-status.enum';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class FilteringActionDto {
-  @ApiProperty({ required: false, enum: FilteredStatus })
+  @ApiProperty({ enum: FilteredStatus })
   @IsEnum(FilteredStatus)
   action: FilteredStatus;
 }

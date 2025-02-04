@@ -14,7 +14,7 @@ async function bootstrap() {
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe());
   app.use(
-    'api/stripe/webhook',
+    '/api/stripe/webhook',
     bodyParser.raw({ type: 'application/json' }), // Ensure raw body for Stripe verification
   );
   app.enableCors({
