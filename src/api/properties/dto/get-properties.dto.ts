@@ -17,7 +17,10 @@ export class GetPropertiesDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Transform(({ value }) => (Array.isArray(value) ? value : [value])) // Ensure it's always an array
+  @Transform(({ value }) => {
+    if (!value) return []; // If undefined or null, return an empty array
+    return Array.isArray(value) ? value : [value]; // Ensure it's always an array
+  })
   state: string[];
 
   @ApiProperty({ required: false })
