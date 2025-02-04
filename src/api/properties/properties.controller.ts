@@ -18,6 +18,7 @@ import { MessageResponseDto } from '../../dto/message-response.dto';
 import { FilteringResponseDto } from './dto/filtering-response.dto';
 import { State } from '../../enums/state.enum';
 import { StateResponseDto } from './dto/state-response.dto';
+import { GetDashboardResponseDto } from './dto/get-dashboard.response.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('properties')
@@ -49,6 +50,17 @@ export class PropertiesController {
     @Body() filteringActionDto: FilteringActionDto,
   ): Promise<MessageResponseDto> {
     return await this.propertiesService.filteringAction(id, filteringActionDto);
+  }
+
+  @Get('dashboard')
+  @ApiOperation({
+    summary: 'Fetch last month, this month and today count data',
+  })
+  @ApiOkResponse({ type: GetDashboardResponseDto })
+  async getDashboard(
+    @UserId() userId: string,
+  ): Promise<GetDashboardResponseDto> {
+    return await this.propertiesService.getDashboard(userId);
   }
 
   @Get('state')

@@ -4,6 +4,14 @@ import { Property } from '../entities/property.entity';
 import { GetPropertiesDto } from '../api/properties/dto/get-properties.dto';
 import { FilteringActionDto } from '../api/properties/dto/filtering-action.dto';
 import { FilteringResponseDto } from '../api/properties/dto/filtering-response.dto';
+import {
+  subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfDay,
+  endOfDay,
+} from 'date-fns';
+import { GetDashboardResponseDto } from '../api/properties/dto/get-dashboard.response.dto';
 
 @Injectable()
 export class PropertyRepository extends Repository<Property> {
@@ -105,6 +113,53 @@ export class PropertyRepository extends Repository<Property> {
     await this.save(property);
     return {
       message: 'Filtering successfully done',
+    };
+  }
+
+  async getDashboard(userId: string): Promise<GetDashboardResponseDto> {
+    const lastMonthStart = startOfMonth(subMonths(new Date(), 1)); // First day of last month
+    const lastMonthEnd = endOfMonth(subMonths(new Date(), 1)); // Last day of last month
+
+    const queryBuilderLastMonth = this.createQueryBuilder('properties')
+      .leftJoinAndSelect('properties.users', 'user')
+      .where('user.id = :userId', { userId })
+      .andWhere('properties.home_status_date >= :dateFrom', {
+        dateFrom: lastMonthStart,
+      })
+      .andWhere('properties.home_status_date <= :dateTo', {
+        dateTo: lastMonthEnd,
+      });
+
+    const lastMonthCount: number = await queryBuilderLastMonth.getCount();
+
+    const queryBuilderThisMonth = this.createQueryBuilder('properties')
+      .leftJoinAndSelect('properties.users', 'user')
+      .where('user.id = :userId', { userId })
+      .andWhere('properties.home_status_date >= :dateFrom', {
+        dateFrom: startOfMonth(new Date()),
+      })
+      .andWhere('properties.home_status_date <= :dateTo', {
+        dateTo: endOfMonth(new Date()),
+      });
+
+    const thisMonthCount: number = await queryBuilderThisMonth.getCount();
+
+    const queryBuilderToday = this.createQueryBuilder('properties')
+      .leftJoinAndSelect('properties.users', 'user')
+      .where('user.id = :userId', { userId })
+      .andWhere('properties.home_status_date >= :dateFrom', {
+        dateFrom: startOfDay(new Date()),
+      })
+      .andWhere('properties.home_status_date <= :dateTo', {
+        dateTo: endOfDay(new Date()),
+      });
+
+    const todayCount: number = await queryBuilderToday.getCount();
+
+    return {
+      lastMonthCount,
+      thisMonthCount,
+      todayCount,
     };
   }
 }

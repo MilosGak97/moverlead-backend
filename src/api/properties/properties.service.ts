@@ -5,6 +5,7 @@ import { GetPropertiesDto } from './dto/get-properties.dto';
 import { FilteringActionDto } from './dto/filtering-action.dto';
 import { State } from '../../enums/state.enum';
 import { StateResponseDto } from './dto/state-response.dto';
+import { GetDashboardResponseDto } from './dto/get-dashboard.response.dto';
 
 @Injectable()
 export class PropertiesService {
@@ -14,15 +15,25 @@ export class PropertiesService {
   ) {}
 
   async getProperties(getPropertiesDto: GetPropertiesDto, userId: string) {
-    return this.propertyRepository.getProperties(getPropertiesDto, userId);
+    return await this.propertyRepository.getProperties(
+      getPropertiesDto,
+      userId,
+    );
   }
 
   async filtering(userId: string) {
-    return this.propertyRepository.filtering(userId);
+    return await this.propertyRepository.filtering(userId);
   }
 
   async filteringAction(id: string, filteringActionDto: FilteringActionDto) {
-    return this.propertyRepository.filteringAction(id, filteringActionDto);
+    return await this.propertyRepository.filteringAction(
+      id,
+      filteringActionDto,
+    );
+  }
+
+  async getDashboard(userId: string): Promise<GetDashboardResponseDto> {
+    return await this.propertyRepository.getDashboard(userId);
   }
 
   async listStates(): Promise<StateResponseDto> {
