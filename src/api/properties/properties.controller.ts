@@ -16,7 +16,6 @@ import { Property } from '../../entities/property.entity';
 import { FilteringActionDto } from './dto/filtering-action.dto';
 import { MessageResponseDto } from '../../dto/message-response.dto';
 import { FilteringResponseDto } from './dto/filtering-response.dto';
-import { State } from '../../enums/state.enum';
 import { StateResponseDto } from './dto/state-response.dto';
 import { GetDashboardResponseDto } from './dto/get-dashboard.response.dto';
 
