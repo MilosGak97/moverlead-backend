@@ -20,21 +20,21 @@ export class User {
   @IsString()
   @IsNotEmpty()
   @Type(() => String)
-  @Column({ name: 'first_name'})
+  @Column({ name: 'first_name' })
   firstName: string;
 
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
   @Type(() => String)
-  @Column({ name: 'last_name'})
+  @Column({ name: 'last_name' })
   lastName: string;
 
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
   @Type(() => String)
-  @Column()
+  @Column({ name: 'company_name' })
   companyName: string;
 
   @ApiProperty({ required: true })
