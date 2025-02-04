@@ -1,5 +1,4 @@
 import * as dotenv from 'dotenv';
-
 dotenv.config(); // Load .env variables immediately
 
 import { NestFactory } from '@nestjs/core';
@@ -7,13 +6,17 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
   app.use(cookieParser());
   app.useGlobalPipes(new ValidationPipe());
-
+  app.use(
+    'api/stripe/webhook',
+    bodyParser.raw({ type: 'application/json' }), // Ensure raw body for Stripe verification
+  );
   app.enableCors({
     origin: ['https://www.moverlead.com', 'https://localhost:3000'],
     credentials: true,

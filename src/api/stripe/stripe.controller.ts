@@ -1,8 +1,7 @@
 import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import { PriceIdsDto } from './dto/price-ids-dto';
-import { Request, Response } from 'express';  // Ensure this is correct
-
+import { Request, Response } from 'express'; // Ensure this is correct
 
 @Controller('stripe')
 export class StripeController {
@@ -43,7 +42,10 @@ export class StripeController {
       });
     }
     try {
-      await this.stripeService.processWebhook(req.body, sig);
+      // Pass the raw body (req.body) to Stripe for signature verification
+      const rawBody = req.body; // The body is raw here, not parsed
+      await this.stripeService.processWebhook(rawBody, sig);
+      //await this.stripeService.processWebhook(req.body, sig);
       res.status(200).send('Received');
     } catch (err) {
       console.error('Webhook processing error:', err);
