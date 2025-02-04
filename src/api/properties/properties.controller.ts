@@ -16,6 +16,8 @@ import { Property } from '../../entities/property.entity';
 import { FilteringActionDto } from './dto/filtering-action.dto';
 import { MessageResponseDto } from '../../dto/message-response.dto';
 import { FilteringResponseDto } from './dto/filtering-response.dto';
+import { State } from '../../enums/state.enum';
+import { StateResponseDto } from './dto/state-response.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('properties')
@@ -46,6 +48,13 @@ export class PropertiesController {
     @Param('id') id: string,
     @Body() filteringActionDto: FilteringActionDto,
   ): Promise<MessageResponseDto> {
-    return this.propertiesService.filteringAction(id, filteringActionDto);
+    return await this.propertiesService.filteringAction(id, filteringActionDto);
+  }
+
+  @Get('state')
+  @ApiOperation({ summary: 'List all states' })
+  @ApiOkResponse({ type: StateResponseDto })
+  async listStates(): Promise<StateResponseDto> {
+    return this.propertiesService.listStates();
   }
 }

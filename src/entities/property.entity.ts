@@ -11,13 +11,23 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsDate, IsOptional } from 'class-validator';
 import { User } from './user.entity';
-import { FilteredStatus } from '../api/enums/filtered-status.enum';
+import { FilteredStatus } from '../enums/filtered-status.enum';
 
 @Entity('properties')
 export class Property {
   @ApiProperty({ required: true })
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Column({ name: 'owner_first_name', nullable: true })
+  ownerFirstName: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Column({ name: 'owner_last_name', nullable: true })
+  ownerLastName: string;
 
   @ApiProperty({ required: false })
   @Column({ nullable: true })
@@ -30,8 +40,8 @@ export class Property {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Column({ nullable: true })
-  street_address?: string; // streetAddress
+  @Column({ name: 'street_address', nullable: true })
+  streetAddress?: string; // streetAddress
 
   @ApiProperty({ required: false })
   @Type(() => String)
@@ -69,25 +79,25 @@ export class Property {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Column({ nullable: true })
-  home_type?: string; // homeType
+  @Column({ name: 'home_type', nullable: true })
+  homeType?: string; // homeType
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Column({ nullable: true })
-  home_status?: string; // homeStatus
+  @Column({ name: 'home_status', nullable: true })
+  homeStatus?: string; // homeStatus
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsDate()
-  @Column({ nullable: true })
-  home_status_date?: Date;
+  @Column({ name: 'home_status_date', nullable: true })
+  homeStatusDate?: Date;
 
   @ApiProperty({ required: false })
   @Type(() => Number)
   @IsOptional()
-  @Column({ nullable: true })
-  photo_count?: number; // photoCount
+  @Column({ name: 'photo_count', nullable: true })
+  photoCount?: number; // photoCount
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -96,24 +106,24 @@ export class Property {
 
   @ApiProperty({ required: false })
   @Type(() => String)
-  @Column({ nullable: true })
-  parcel_id?: string; // parcelId
+  @Column({ name: 'parcel_id', nullable: true })
+  parcelId?: string; // parcelId
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Column({ nullable: true })
-  realtor_name?: string; // listing_provided_by.name
+  @Column({ name: 'realtor_name', nullable: true })
+  realtorName?: string; // listing_provided_by.name
 
   @ApiProperty({ required: false })
   @Type(() => String)
   @IsOptional()
-  @Column({ nullable: true })
-  realtor_phone?: string; // listing_provided_by.phone
+  @Column({ name: 'realtor_phone', nullable: true })
+  realtorPhone?: string; // listing_provided_by.phone
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Column({ nullable: true })
-  realtor_company?: string; // listing_provided_by.phone_number
+  @Column({ name: 'realtor_company', nullable: true })
+  realtorCompany?: string; // listing_provided_by.phone_number
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -123,14 +133,14 @@ export class Property {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @Column({ nullable: true })
-  filtered_status: FilteredStatus;
+  @Column({ name: 'filtered_status', nullable: true })
+  filteredStatus: FilteredStatus;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsDate()
-  @Column({ nullable: true })
-  filtered_status_date: Date;
+  @Column({ name: 'filtered_status_date', nullable: true })
+  filteredStatusDate: Date;
 
   @CreateDateColumn()
   createdAt: Date;

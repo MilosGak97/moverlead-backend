@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsNumber, IsOptional } from 'class-validator';
-import { PropertyStatus } from '../../enums/property-status.enum';
+import { PropertyStatus } from '../../../enums/property-status.enum';
 import { Type } from 'class-transformer';
-import { FilteredStatus } from '../../enums/filtered-status.enum';
+import { FilteredStatus } from '../../../enums/filtered-status.enum';
 
 export class GetPropertiesDto {
   @ApiProperty({ required: false })

@@ -3,6 +3,8 @@ import { PropertyRepository } from '../../repositories/property.repository';
 import { UserRepository } from '../../repositories/user.repository';
 import { GetPropertiesDto } from './dto/get-properties.dto';
 import { FilteringActionDto } from './dto/filtering-action.dto';
+import { State } from '../../enums/state.enum';
+import { StateResponseDto } from './dto/state-response.dto';
 
 @Injectable()
 export class PropertiesService {
@@ -21,5 +23,12 @@ export class PropertiesService {
 
   async filteringAction(id: string, filteringActionDto: FilteringActionDto) {
     return this.propertyRepository.filteringAction(id, filteringActionDto);
+  }
+
+  async listStates(): Promise<StateResponseDto> {
+    const states = Object.values(State);
+    return {
+      states,
+    };
   }
 }

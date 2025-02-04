@@ -20,22 +20,22 @@ export class User {
   @IsString()
   @IsNotEmpty()
   @Type(() => String)
-  @Column()
-  first_name: string;
+  @Column({ name: 'first_name'})
+  firstName: string;
+
+  @ApiProperty({ required: true })
+  @IsString()
+  @IsNotEmpty()
+  @Type(() => String)
+  @Column({ name: 'last_name'})
+  lastName: string;
 
   @ApiProperty({ required: true })
   @IsString()
   @IsNotEmpty()
   @Type(() => String)
   @Column()
-  last_name: string;
-
-  @ApiProperty({ required: true })
-  @IsString()
-  @IsNotEmpty()
-  @Type(() => String)
-  @Column()
-  company_name: string;
+  companyName: string;
 
   @ApiProperty({ required: true })
   @IsEmail()
@@ -47,8 +47,8 @@ export class User {
   @ApiProperty({ required: true })
   @IsBoolean()
   @Type(() => Boolean)
-  @Column({ default: false })
-  is_verified: boolean;
+  @Column({ name: 'is_verified', default: false })
+  isVerified: boolean;
 
   @ApiProperty({ required: true })
   @IsString()
@@ -61,15 +61,15 @@ export class User {
   @IsString()
   @IsOptional()
   @Type(() => String)
-  @Column({ nullable: true })
-  email_passcode?: string;
+  @Column({ name: 'email_passcode', nullable: true })
+  emailPasscode?: string;
 
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
   @Type(() => String)
-  @Column({ nullable: true })
-  password_passcode?: string;
+  @Column({ name: 'password_passcode', nullable: true })
+  passwordPasscode?: string;
 
   @ApiProperty({ required: false })
   @IsString()
@@ -117,8 +117,8 @@ export class User {
   @IsString()
   @IsOptional()
   @Type(() => String)
-  @Column({ nullable: true })
-  phone_number: string;
+  @Column({ name: 'phone_number', nullable: true })
+  phoneNumber: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

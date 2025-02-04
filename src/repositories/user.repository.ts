@@ -40,7 +40,7 @@ export class UserRepository extends Repository<User> {
     id: string;
     email_passcode: string;
   }> {
-    if (registerDto.password !== registerDto.repeat_password) {
+    if (registerDto.password !== registerDto.repeatPassword) {
       throw new BadRequestException('Passwords do not match');
     }
 
@@ -56,26 +56,23 @@ export class UserRepository extends Repository<User> {
       registerDto.password,
       salt,
     );
-    const email_passcode: string = Math.floor(
+    const emailPasscode: string = Math.floor(
       100000 + Math.random() * 900000,
     ).toString();
-    const hashed_email_passcode: string = await bcrypt.hash(
-      email_passcode,
-      salt,
-    );
+    const hashedEmailPasscode: string = await bcrypt.hash(emailPasscode, salt);
     const user = new User();
-    user.first_name = registerDto.first_name;
-    user.last_name = registerDto.last_name;
-    user.company_name = registerDto.company_name;
-    user.is_verified = false;
-    user.email = registerDto.email;
+
+    const { firstName, lastName, email, companyName } = registerDto;
+    Object.assign(user, { firstName, lastName, email, companyName });
+
+    user.isVerified = false;
     user.password = hashedPassword;
-    user.email_passcode = hashed_email_passcode;
+    user.emailPasscode = hashedEmailPasscode;
     await this.save(user);
     return {
       id: user.id,
       email: registerDto.email,
-      email_passcode: email_passcode,
+      email_passcode: emailPasscode,
     };
   }
 
@@ -91,12 +88,12 @@ export class UserRepository extends Repository<User> {
       throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
     }
     const pin: string = verifyEmailDto.pin;
-    const passcodeMatch = await bcrypt.compare(pin, user.email_passcode);
+    const passcodeMatch = await bcrypt.compare(pin, user.emailPasscode);
     if (!passcodeMatch) {
       throw new HttpException('Passcode is not valid.', HttpStatus.BAD_REQUEST);
     }
-    user.is_verified = true;
-    user.email_passcode = null;
+    user.isVerified = true;
+    user.emailPasscode = null;
     await this.save(user);
 
     return {
@@ -111,14 +108,14 @@ export class UserRepository extends Repository<User> {
     }
 
     return {
-      company_name: user.company_name,
+      company_name: user.companyName,
       address: user.address,
       address2: user.address2,
       city: user.city,
       state: user.state,
       zip: user.zip,
       website: user.website,
-      phone_number: user.phone_number,
+      phone_number: user.phoneNumber,
     };
   }
 

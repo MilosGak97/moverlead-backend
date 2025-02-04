@@ -100,8 +100,8 @@ export class PropertyRepository extends Repository<Property> {
     if (!property) {
       throw new HttpException('Property not found', HttpStatus.BAD_REQUEST);
     }
-    property.filtered_status = filteringActionDto.action;
-    property.filtered_status_date = new Date();
+    property.filteredStatus = filteringActionDto.action;
+    property.filteredStatusDate = new Date();
     await this.save(property);
     return {
       message: 'Filtering successfully done',

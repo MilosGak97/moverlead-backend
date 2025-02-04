@@ -7,13 +7,13 @@ export class RegisterDto {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  first_name: string;
+  firstName: string;
 
   @ApiProperty({ required: true })
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  last_name: string;
+  lastName: string;
 
   @ApiProperty({ required: true })
   @IsNotEmpty()
@@ -25,7 +25,7 @@ export class RegisterDto {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  company_name: string;
+  companyName: string;
 
   @ApiProperty({ required: true })
   @IsNotEmpty()
@@ -37,5 +37,5 @@ export class RegisterDto {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  repeat_password: string;
+  repeatPassword: string;
 }
