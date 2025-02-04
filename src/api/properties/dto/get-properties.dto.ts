@@ -17,6 +17,7 @@ export class GetPropertiesDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @Transform(({ value }) => (Array.isArray(value) ? value : [value])) // Ensure it's always an array
   state: string[];
 
   @ApiProperty({ required: false })
