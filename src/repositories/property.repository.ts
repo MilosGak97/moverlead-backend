@@ -58,7 +58,11 @@ export class PropertyRepository extends Repository<Property> {
     }
 
     if (state && state.length > 0) {
-      queryBuilder.andWhere('properties.state IN (:...state)', { state });
+      console.log('STATE IN REPOSITORY: ' + state);
+      const stateArray = Array.isArray(state) ? state : [state]; // Ensure it's an array
+      queryBuilder.andWhere('properties.state IN (:...state)', {
+        state: stateArray,
+      });
     }
 
     if (propertyValueFrom) {
