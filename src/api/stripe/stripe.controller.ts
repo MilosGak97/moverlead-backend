@@ -1,5 +1,8 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, Res } from '@nestjs/common';
 import { StripeService } from './stripe.service';
+import { PriceIdsDto } from './dto/price-ids-dto';
+import { Request, Response } from 'express';  // Ensure this is correct
+
 
 @Controller('stripe')
 export class StripeController {
@@ -20,13 +23,31 @@ export class StripeController {
     return await this.stripeService.getAllPrices(id);
   }
 
-  @Get('checkout-session/multiple')
-  async createCheckoutSessionMultiple(@Query('priceIds') priceIds: string[]) {
+  @Post('checkout-session/multiple')
+  async createCheckoutSessionMultiple(@Body() priceIds: PriceIdsDto) {
     return await this.stripeService.createCheckoutSessionMultiple(priceIds);
   }
 
   @Get('checkout-session/single/:id')
   async createCheckoutSession(@Param('id') id: string) {
     return await this.stripeService.createCheckoutSession(id);
+  }
+
+  @Post('webhook')
+  async handleStripeWebhook(@Req() req: Request, @Res() res: Response) {
+    const sig = req.headers['stripe-signature'] as string;
+
+    if (!sig) {
+      return res.status(400).json({
+        message: 'Something went wrong with Stripe signature',
+      });
+    }
+    try {
+      await this.stripeService.processWebhook(req.body, sig);
+      res.status(200).send('Received');
+    } catch (err) {
+      console.error('Webhook processing error:', err);
+      res.status(400).send(`Webhook Error: ${err.message}`);
+    }
   }
 }
