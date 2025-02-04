@@ -5,12 +5,12 @@ import { Transform, Type } from 'class-transformer';
 import { FilteredStatus } from '../../../enums/filtered-status.enum';
 
 export class GetPropertiesDto {
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, isArray: true, enum: FilteredStatus })
   @IsEnum(FilteredStatus, { each: true })
   @IsOptional()
   filteredStatus: FilteredStatus[];
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, isArray: true, enum: PropertyStatus })
   @IsEnum(PropertyStatus, { each: true })
   @IsOptional()
   propertyStatus: PropertyStatus[];
