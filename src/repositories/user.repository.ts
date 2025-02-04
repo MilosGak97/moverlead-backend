@@ -108,14 +108,14 @@ export class UserRepository extends Repository<User> {
     }
 
     return {
-      company_name: user.companyName,
+      companyName: user.companyName,
       address: user.address,
       address2: user.address2,
       city: user.city,
       state: user.state,
       zip: user.zip,
       website: user.website,
-      phone_number: user.phoneNumber,
+      phoneNumber: user.phoneNumber,
     };
   }
 
@@ -128,7 +128,7 @@ export class UserRepository extends Repository<User> {
     if (!user) {
       throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
     }
-    const { password, new_password, new_password_repeat } = changePasswordDto;
+    const { password, newPassword, newPasswordRepeat } = changePasswordDto;
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       throw new HttpException(
@@ -136,14 +136,14 @@ export class UserRepository extends Repository<User> {
         HttpStatus.BAD_REQUEST,
       );
     }
-    if (new_password !== new_password_repeat) {
+    if (newPassword !== newPasswordRepeat) {
       throw new HttpException(
         'Password is not matching',
         HttpStatus.BAD_REQUEST,
       );
     }
 
-    user.password = await bcrypt.hash(new_password, 10);
+    user.password = await bcrypt.hash(newPassword, 10);
     await this.save(user);
     return {
       message: 'Password changed successfully.',

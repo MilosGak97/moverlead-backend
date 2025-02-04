@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class GetCompanyResponseDto {
   @ApiProperty()
-  company_name: string;
+  companyName: string;
 
   @ApiProperty()
   address: string;
@@ -23,5 +23,5 @@ export class GetCompanyResponseDto {
   website: string;
 
   @ApiProperty()
-  phone_number: string;
+  phoneNumber: string;
 }

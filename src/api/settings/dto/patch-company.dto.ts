@@ -43,5 +43,5 @@ export class PatchCompanyDto {
   @IsOptional()
   @IsString()
   @Type(() => String)
-  phone_number: string;
+  phoneNumber: string;
 }

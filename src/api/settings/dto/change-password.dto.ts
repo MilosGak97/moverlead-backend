@@ -13,11 +13,11 @@ export class ChangePasswordDto {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  new_password: string;
+  newPassword: string;
 
   @ApiProperty({ required: true })
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
-  new_password_repeat: string;
+  newPasswordRepeat: string;
 }

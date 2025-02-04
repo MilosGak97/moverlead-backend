@@ -7,6 +7,7 @@ import { EmailModule } from './email/email.module';
 import { Property } from './entities/property.entity';
 import { PropertiesModule } from './api/properties/properties.module';
 import { SettingsModule } from './api/settings/settings.module';
+import { StripeModule } from './api/stripe/stripe.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { SettingsModule } from './api/settings/settings.module';
     EmailModule,
     PropertiesModule,
     SettingsModule,
+    StripeModule,
   ],
 })
 export class AppModule {}
