@@ -166,4 +166,9 @@ export class PropertyRepository extends Repository<Property> {
       todayCount,
     };
   }
+
+  async createProperty(property: any) {
+    console.log('PROPERTY ZPID: ' + property.zpid);
+    return true;
+  }
 }

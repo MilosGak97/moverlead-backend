@@ -18,11 +18,24 @@ import { MessageResponseDto } from '../../dto/message-response.dto';
 import { FilteringResponseDto } from './dto/filtering-response.dto';
 import { StateResponseDto } from './dto/state-response.dto';
 import { GetDashboardResponseDto } from './dto/get-dashboard.response.dto';
+import { GetProductsDto } from './dto/get-products-dto';
+import { County } from '../../entities/county.entity';
 
 @UseGuards(JwtAuthGuard)
 @Controller('properties')
 export class PropertiesController {
   constructor(private readonly propertiesService: PropertiesService) {}
+
+  @Get('dashboard')
+  @ApiOperation({
+    summary: 'Fetch last month, this month and today count data',
+  })
+  @ApiOkResponse({ type: GetDashboardResponseDto })
+  async getDashboard(
+    @UserId() userId: string,
+  ): Promise<GetDashboardResponseDto> {
+    return await this.propertiesService.getDashboard(userId);
+  }
 
   @Get('listings')
   @ApiOperation({ summary: 'Show Listings' })
@@ -31,7 +44,7 @@ export class PropertiesController {
     @Query() getPropertiesDto: GetPropertiesDto,
     @UserId() userId: string,
   ): Promise<Property[]> {
-    return this.propertiesService.getProperties(getPropertiesDto, userId);
+    return await this.propertiesService.getProperties(getPropertiesDto, userId);
   }
 
   @Get('filtering')
@@ -51,21 +64,23 @@ export class PropertiesController {
     return await this.propertiesService.filteringAction(id, filteringActionDto);
   }
 
-  @Get('dashboard')
-  @ApiOperation({
-    summary: 'Fetch last month, this month and today count data',
-  })
-  @ApiOkResponse({ type: GetDashboardResponseDto })
-  async getDashboard(
-    @UserId() userId: string,
-  ): Promise<GetDashboardResponseDto> {
-    return await this.propertiesService.getDashboard(userId);
-  }
-
   @Get('state')
   @ApiOperation({ summary: 'List all states' })
   @ApiOkResponse({ type: StateResponseDto })
   async listStates(): Promise<StateResponseDto> {
     return this.propertiesService.listStates();
+  }
+
+  @Post('scrapper/manual-run/:id')
+  @ApiOperation({ summary: 'Manually run the scrapper per brightdata ID' })
+  async manualRunScrapper(@Param('id') id: string) {
+    return await this.propertiesService.manualRunScrapper(id);
+  }
+
+  @Get('/products')
+  @ApiOperation({ summary: 'List products by state' })
+  @ApiOkResponse({ type: [County] })
+  async getProducts(@Query() getProductsDto: GetProductsDto) {
+    return this.propertiesService.getProducts(getProductsDto);
   }
 }

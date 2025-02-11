@@ -94,7 +94,7 @@ export class Property {
   homeStatusDate?: Date;
 
   @ApiProperty({ required: false })
-  @Type(() => Number)
+  @Type((): NumberConstructor => Number)
   @IsOptional()
   @Column({ name: 'photo_count', nullable: true })
   photoCount?: number; // photoCount

@@ -1,4 +1,10 @@
-import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column, CreateDateColumn,
+  Entity,
+  ManyToMany,
+  OneToMany,
+  PrimaryGeneratedColumn, UpdateDateColumn
+} from "typeorm";
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -9,6 +15,10 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Property } from './property.entity';
+import { State } from '../enums/state.enum';
+import { County } from './county.entity';
+import { Subscription } from './subscription.entity';
+import { Payment } from './payment.entity';
 
 @Entity('users')
 export class User {
@@ -122,6 +132,32 @@ export class User {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  @ManyToMany(() => Property, (property) => property.users)
+  @ManyToMany((): typeof Property => Property, (property) => property.users)
   properties: Promise<Property[]>;
+
+  @ApiProperty({ required: false, nullable: true })
+  @IsOptional()
+  @OneToMany(
+    (): typeof Subscription => Subscription,
+    (subscription) => subscription.user,
+    { nullable: true },
+  )
+  subscriptions: Subscription[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @OneToMany(
+    (): typeof Payment => Payment,
+    (payment: Payment) => payment.subscription,
+    {
+      nullable: true,
+    },
+  )
+  payments: Payment[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

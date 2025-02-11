@@ -1,67 +1,14 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
 import { PriceIdsDto } from './dto/price-ids-dto';
+import { CountyRepository } from '../../repositories/county.repository';
 
 @Injectable()
 export class StripeService {
   private stripe: Stripe;
 
-  constructor() {
+  constructor(private readonly countyRepository: CountyRepository) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-  }
-
-  async getAllProducts() {
-    try {
-      return await this.stripe.products.list();
-    } catch (error) {
-      console.log(error);
-      throw new Error('Stripe Error: ' + error);
-    }
-  }
-
-  async getProduct(productId: string) {
-    try {
-      return await this.stripe.products.retrieve(productId);
-    } catch (error) {
-      console.error(error);
-      throw new Error(`Stripe Error: ${error.message}`);
-    }
-  }
-
-  async getAllPrices(productId: string) {
-    try {
-      return await this.stripe.prices.list({ product: productId });
-    } catch (error) {
-      console.error(error);
-      throw new Error(`Stripe Error: ${error.message}`);
-    }
-  }
-
-  async createCheckoutSession(productId: string) {
-    try {
-      const prices = await this.stripe.prices.list({ product: productId });
-      if (prices.data.length === 0) {
-        throw new Error(`Stripe Error: ${productId} not found`);
-      }
-      const priceId = prices.data[0].id;
-
-      const session = await this.stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1,
-          },
-        ],
-        mode: 'subscription',
-        success_url: `${process.env.SUCCESS_URL}`, // Define this in .env
-        cancel_url: `${process.env.CANCEL_URL}`, // Define this in .env
-      });
-      return { checkoutUrl: session.url }; // Return the checkout URL to redirect the user
-    } catch (error) {
-      console.error(error);
-      throw new Error(`Stripe Error: ${error.message}`);
-    }
   }
 
   async createCheckoutSessionMultiple(priceIdsDto: PriceIdsDto) {
