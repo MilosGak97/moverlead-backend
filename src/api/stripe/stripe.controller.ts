@@ -2,14 +2,21 @@ import { Body, Controller, Post, Req, Res } from '@nestjs/common';
 import { StripeService } from './stripe.service';
 import { PriceIdsDto } from './dto/price-ids-dto';
 import { Request, Response } from 'express';
+import { UserId } from '../auth/user-id.decorator';
 
 @Controller('stripe')
 export class StripeController {
   constructor(private readonly stripeService: StripeService) {}
 
   @Post('checkout-session/multiple')
-  async createCheckoutSessionMultiple(@Body() priceIds: PriceIdsDto) {
-    return await this.stripeService.createCheckoutSessionMultiple(priceIds);
+  async createCheckoutSessionMultiple(
+    @Body() priceIds: PriceIdsDto,
+    @UserId() userId: string,
+  ) {
+    return await this.stripeService.createCheckoutSessionMultiple(
+      priceIds,
+      userId,
+    );
   }
 
   @Post('webhook')

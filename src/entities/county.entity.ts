@@ -65,9 +65,11 @@ export class County {
   )
   subscriptions: Subscription[];
 
+  @ApiProperty()
   @CreateDateColumn()
   createdAt: Date;
 
+  @ApiProperty()
   @UpdateDateColumn()
   updatedAt: Date;
 }

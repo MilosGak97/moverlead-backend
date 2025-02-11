@@ -2,17 +2,41 @@ import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
 import { PriceIdsDto } from './dto/price-ids-dto';
 import { CountyRepository } from '../../repositories/county.repository';
+import { UserRepository } from '../../repositories/user.repository';
 
 @Injectable()
 export class StripeService {
   private stripe: Stripe;
 
-  constructor(private readonly countyRepository: CountyRepository) {
+  constructor(
+    private readonly countyRepository: CountyRepository,
+    private readonly userRepository: UserRepository,
+  ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   }
 
-  async createCheckoutSessionMultiple(priceIdsDto: PriceIdsDto) {
+  async createCheckoutSessionMultiple(
+    priceIdsDto: PriceIdsDto,
+    userId: string,
+  ) {
     try {
+      const user = await this.userRepository.findOne({ where: { id: userId } });
+
+      let userStripeId = user?.stripeId;
+      if (!userStripeId) {
+        const customer = await this.stripe.customers.create({
+          email: user.email,
+          name: `${user.firstName} ${user.lastName}`.trim(),
+          metadata: {
+            userId: user.id,
+          },
+        });
+        userStripeId = customer.id;
+
+        user.stripeId = userStripeId;
+        await this.userRepository.save(user);
+      }
+
       const lineItems = priceIdsDto.priceIds.map((priceId) => {
         return {
           price: priceId,
@@ -22,16 +46,11 @@ export class StripeService {
 
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card'],
+        customer: userStripeId,
         line_items: lineItems,
         mode: 'subscription',
         success_url: `${process.env.SUCCESS_URL}`,
         cancel_url: `${process.env.CANCEL_URL}`,
-        metadata: {
-          // Custom metadata fields
-          customer_tag: 'Bergen County Subscriber', // Example custom metadata
-          tier: '1', // Custom tier or other data
-          county: 'Bergen County, NJ', // County information or other product details
-        },
       });
 
       return { checkoutUrl: session.url };

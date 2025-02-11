@@ -1,10 +1,12 @@
 import {
-  Column, CreateDateColumn,
+  Column,
+  CreateDateColumn,
   Entity,
   ManyToMany,
   OneToMany,
-  PrimaryGeneratedColumn, UpdateDateColumn
-} from "typeorm";
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsBoolean,
@@ -15,8 +17,6 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { Property } from './property.entity';
-import { State } from '../enums/state.enum';
-import { County } from './county.entity';
 import { Subscription } from './subscription.entity';
 import { Payment } from './payment.entity';
 
@@ -39,6 +39,12 @@ export class User {
   @Type(() => String)
   @Column({ name: 'last_name' })
   lastName: string;
+
+  @ApiProperty({ required: false })
+  @IsString()
+  @IsOptional()
+  @Column({ name: 'stripe_id' })
+  stripeId: string;
 
   @ApiProperty({ required: true })
   @IsString()
