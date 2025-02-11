@@ -23,10 +23,11 @@ export class StripeController {
     }
     try {
       // Pass the raw body (req.body) to Stripe for signature verification
-      const rawBody = req.body; // The body is raw here, not parsed
+      // Ensure raw body is correctly passed
+      const rawBody = (req as any).rawBody || req.body;
 
-      console.log('Raw body type:', typeof req.body);
-      console.log('Raw body:', req.body);
+      console.log('Raw body type:', typeof rawBody);
+      console.log('Raw body:', rawBody);
       await this.stripeService.processWebhook(rawBody, sig);
       //await this.stripeService.processWebhook(req.body, sig);
       res.status(200).send('Received');

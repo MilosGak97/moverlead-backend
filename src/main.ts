@@ -17,6 +17,7 @@ async function bootstrap() {
     '/api/stripe/webhook',
     bodyParser.raw({ type: 'application/json' }), // Ensure raw body for Stripe verification
   );
+
   app.enableCors({
     origin: ['https://www.moverlead.com', 'https://localhost:3000'],
     credentials: true,
