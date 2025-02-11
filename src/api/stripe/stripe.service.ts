@@ -61,6 +61,11 @@ export class StripeService {
         await this.handleSuccessfulPayment(session);
       }
 
+      if (event.type === 'checkout.session.expired') {
+        const session = event.data.object as Stripe.Checkout.Session;
+        console.log('Payment Session has expired:', session);
+      }
+
       return { success: true };
     } catch (err) {
       console.error('Webhook Error:', err.message);
