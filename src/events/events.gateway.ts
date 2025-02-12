@@ -1,38 +1,21 @@
 import {
   WebSocketGateway,
-  WebSocketServer,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   SubscribeMessage,
-  ConnectedSocket,
+  MessageBody,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
+  transports: ['websocket'],
   cors: {
-    origin: 'https://www.moverlead.com', // Must match frontend
+    origin: '*', // Allows all domains. You can specify specific domains instead of '*'.
     methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type'],
   },
 })
-export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  private logger = new Logger('EventsGateway');
-
-  @WebSocketServer()
-  server: Server;
-
-  handleConnection(client: Socket) {
-    this.logger.log(`Client connected: ${client.id}`);
-    client.emit('connected', { message: 'Connected to WebSocket server' });
-  }
-
-  handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
-  }
-
-  @SubscribeMessage('ping')
-  handlePing(@ConnectedSocket() client: Socket) {
-    this.logger.log(`Received ping from ${client.id}`);
-    client.emit('pong');
+export class EventsGateway {
+  @SubscribeMessage('message')
+  handleMessage(@MessageBody() data: string): string {
+    return 'Received message: ' + data;
   }
 }
+
