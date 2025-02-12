@@ -1,4 +1,5 @@
 import * as dotenv from 'dotenv';
+
 dotenv.config(); // Load .env variables immediately
 
 import { NestFactory } from '@nestjs/core';
@@ -21,7 +22,7 @@ async function bootstrap() {
   app.enableCors({
     origin: ['https://www.moverlead.com', 'https://localhost:3000'],
     credentials: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: 'Content-Type, Authorization',
   });
 

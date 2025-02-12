@@ -11,7 +11,7 @@ import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: 'https://www.moverlead.com', // Must match frontend
     methods: ['GET', 'POST'],
   },
   transports: ['websocket', 'polling'], // Ensure proper transport fallback
