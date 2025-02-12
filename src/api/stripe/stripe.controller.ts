@@ -3,16 +3,20 @@ import { StripeService } from './stripe.service';
 import { PriceIdsDto } from './dto/price-ids-dto';
 import { Request, Response } from 'express';
 import { UserId } from '../auth/user-id.decorator';
+import { CheckoutResponseDto } from './dto/checkout-response.dto';
+import { ApiOkResponse, ApiOperation } from '@nestjs/swagger';
 
 @Controller('stripe')
 export class StripeController {
   constructor(private readonly stripeService: StripeService) {}
 
   @Post('checkout-session/multiple')
+  @ApiOkResponse({ type: CheckoutResponseDto })
+  @ApiOperation({ summary: 'Create stripe checkout' })
   async createCheckoutSessionMultiple(
     @Body() priceIds: PriceIdsDto,
     @UserId() userId: string,
-  ) {
+  ): Promise<CheckoutResponseDto> {
     return await this.stripeService.createCheckoutSessionMultiple(
       priceIds,
       userId,
@@ -20,6 +24,7 @@ export class StripeController {
   }
 
   @Post('webhook')
+  @ApiOperation({ summary: 'Webhook for stripe' })
   async handleStripeWebhook(@Req() req: Request, @Res() res: Response) {
     const sig = req.headers['stripe-signature'] as string;
 

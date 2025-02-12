@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { PriceIdsDto } from './dto/price-ids-dto';
 import { CountyRepository } from '../../repositories/county.repository';
 import { UserRepository } from '../../repositories/user.repository';
+import { CheckoutResponseDto } from './dto/checkout-response.dto';
 
 @Injectable()
 export class StripeService {
@@ -18,7 +19,7 @@ export class StripeService {
   async createCheckoutSessionMultiple(
     priceIdsDto: PriceIdsDto,
     userId: string,
-  ) {
+  ): Promise<CheckoutResponseDto> {
     try {
       const user = await this.userRepository.findOne({ where: { id: userId } });
 

@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
 export class PriceIdsDto {
-  @ApiProperty({ required: true, isArray: true })
+  @ApiProperty({ required: true, isArray: true, type: 'string' })
   @IsNotEmpty()
   @IsArray()
   @Transform(({ value }) => {
