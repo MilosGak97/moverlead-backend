@@ -11,6 +11,7 @@ import { StripeModule } from './api/stripe/stripe.module';
 import { County } from './entities/county.entity';
 import { Subscription } from './entities/subscription.entity';
 import { Payment } from './entities/payment.entity';
+import { EventsGateway } from './events/events.gateway';
 
 @Module({
   imports: [
@@ -34,5 +35,6 @@ import { Payment } from './entities/payment.entity';
     SettingsModule,
     StripeModule,
   ],
+  providers: [EventsGateway],
 })
 export class AppModule {}

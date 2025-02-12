@@ -43,7 +43,7 @@ export class User {
   @ApiProperty({ required: false })
   @IsString()
   @IsOptional()
-  @Column({ name: 'stripe_id' })
+  @Column({ name: 'stripe_id', nullable: true })
   stripeId: string;
 
   @ApiProperty({ required: true })

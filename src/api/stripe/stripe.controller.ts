@@ -17,6 +17,9 @@ export class StripeController {
     @Body() createCheckoutSessionDto: CreateCheckoutSessionDto,
     @UserId() userId: string,
   ): Promise<CreateCheckoutSessionResponseDto> {
+    console.log('Read User ID: ' + userId);
+
+    console.log('Read Type User ID: ' + typeof userId);
     return await this.stripeService.createCheckoutSessionMultiple(
       createCheckoutSessionDto,
       userId,
