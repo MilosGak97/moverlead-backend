@@ -1,9 +1,9 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import Stripe from 'stripe';
-import { PriceIdsDto } from './dto/price-ids-dto';
+import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 import { CountyRepository } from '../../repositories/county.repository';
 import { UserRepository } from '../../repositories/user.repository';
-import { CheckoutResponseDto } from './dto/checkout-response.dto';
+import { CreateCheckoutSessionResponseDto } from './dto/create-checkout-session-response.dto';
 
 @Injectable()
 export class StripeService {
@@ -17,9 +17,9 @@ export class StripeService {
   }
 
   async createCheckoutSessionMultiple(
-    priceIdsDto: PriceIdsDto,
+    createCheckoutSessionDto: CreateCheckoutSessionDto,
     userId: string,
-  ): Promise<CheckoutResponseDto> {
+  ): Promise<CreateCheckoutSessionResponseDto> {
     try {
       const user = await this.userRepository.findOne({ where: { id: userId } });
 
@@ -38,7 +38,7 @@ export class StripeService {
         await this.userRepository.save(user);
       }
 
-      const lineItems = priceIdsDto.priceIds.map((priceId) => {
+      const lineItems = createCheckoutSessionDto.priceIds.map((priceId) => {
         return {
           price: priceId,
           quantity: 1,
@@ -54,7 +54,10 @@ export class StripeService {
         cancel_url: `${process.env.CANCEL_URL}`,
       });
 
-      return { checkoutUrl: session.url };
+      return {
+        checkoutUrl: session.url,
+        checkoutId: session.id,
+      };
     } catch (error) {
       console.error(error);
       throw new HttpException(
@@ -108,7 +111,7 @@ export class StripeService {
     // Save subscription details to the database
     await this.createSubscription({
       customerEmail: session.customer_email,
-      subscriptionId: subscriptionId, // Ensure it's a string
+      subscriptionId: subscriptionId,
       metadata,
     });
   }

@@ -2,7 +2,7 @@ import { IsArray, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
-export class PriceIdsDto {
+export class CreateCheckoutSessionDto {
   @ApiProperty({ required: true, isArray: true, type: 'string' })
   @IsNotEmpty()
   @IsArray()
@@ -11,4 +11,6 @@ export class PriceIdsDto {
     return Array.isArray(value) ? value.flat() : [value];
   })
   priceIds: string[];
+
+
 }
