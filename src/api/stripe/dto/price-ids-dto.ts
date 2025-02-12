@@ -8,7 +8,7 @@ export class PriceIdsDto {
   @IsArray()
   @Transform(({ value }) => {
     if (!value) return [];
-    return Array.isArray(value) ? value : [value];
+    return Array.isArray(value) ? value.flat() : [value];
   })
   priceIds: string[];
 }
