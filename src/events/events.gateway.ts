@@ -1,6 +1,5 @@
 import {
   ConnectedSocket,
-  MessageBody,
   OnGatewayConnection,
   OnGatewayDisconnect,
   SubscribeMessage,
@@ -10,7 +9,13 @@ import {
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
 
-@WebSocketGateway({ cors: Socket })
+@WebSocketGateway({
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+  transports: ['websocket', 'polling'], // Ensure proper transport fallback
+})
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private logger = new Logger('EventsGateway');
 
@@ -21,7 +26,7 @@ export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('ping')
   handlePing(@ConnectedSocket() client: Socket) {
-    client.emit('ping');
+    client.emit('pong');
     this.logger.log(`Pong sent to ${client.id}`);
 
     clearTimeout(this.clients.get(client.id));
