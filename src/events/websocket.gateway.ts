@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
   cors: {
     origin: 'https://www.moverlead.com/', // Change this to your frontend domain for security
     methods: ['GET', 'POST'],
+    transports: ['websocket'], // Ensures WebSocket-only connection (no polling)
   },
 }) // Allow all origins for testing
 export class WebsocketGateway
