@@ -20,11 +20,7 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: [
-      'https://www.moverlead.com',
-      'wss://api.moverlead.com',
-      'https://localhost:3000',
-    ],
+    origin: ['https://www.moverlead.com', 'wss://api.moverlead.com', '*'],
     credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type, Authorization'],
