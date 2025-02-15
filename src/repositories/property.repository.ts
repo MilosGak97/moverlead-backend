@@ -167,8 +167,20 @@ export class PropertyRepository extends Repository<Property> {
     };
   }
 
-  async createProperty(property: any) {
-    console.log('PROPERTY ZPID: ' + property.zpid);
-    return true;
+  async createProperty(data: any) {
+    console.log(`ZPID IN REP: ${data.zpid}`);
+    const propertyExist = await this.findOneBy({ zpid: data.zpid });
+    if (propertyExist) {
+      console.log(`Property with ${data.zpid} already exist`);
+      return;
+    }
+    const property = new Property();
+    Object.assign(property, data);
+    property.realtorName = data.listing_provided_by.name;
+    property.realtorPhone = data.listing_provided_by.phone_number;
+    property.realtorCompany = data.listing_provided_by.company;
+    property.realtorEmail = data.listing_provided_by.email;
+    await this.save(property);
+    console.log(`Property with ZPID: ${property.zpid} is saved to database`);
   }
 }

@@ -127,6 +127,11 @@ export class Property {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @Column({ name: 'realtor_email', nullable: true })
+  realtorEmail?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
   @ManyToMany(() => User, (company) => company.properties)
   @JoinTable()
   users: User[];
@@ -142,9 +147,11 @@ export class Property {
   @Column({ name: 'filtered_status_date', nullable: true })
   filteredStatusDate: Date;
 
+  @ApiProperty({ required: false })
   @CreateDateColumn()
   createdAt: Date;
 
+  @ApiProperty({ required: false })
   @UpdateDateColumn()
   updatedAt: Date;
 }

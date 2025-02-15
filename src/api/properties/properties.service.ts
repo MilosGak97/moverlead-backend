@@ -69,10 +69,9 @@ export class PropertiesService {
       response.data
         .pipe(parser())
         .pipe(streamArray())
-        .on('data', async ({ value: property }) => {
-          if (property.zpid) {
-            await this.propertyRepository.createProperty(property);
-            console.log(`Processing Property ZPID: ${property.zpid}`);
+        .on('data', async ({ value: data }) => {
+          if (data.zpid) {
+            await this.propertyRepository.createProperty(data);
             // Process property here
           }
         })
