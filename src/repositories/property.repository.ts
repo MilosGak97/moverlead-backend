@@ -12,10 +12,16 @@ import {
   endOfDay,
 } from 'date-fns';
 import { GetDashboardResponseDto } from '../api/properties/dto/get-dashboard.response.dto';
+import { CountyRepository } from './county.repository';
+import { PropertyCountiesFailedRepository } from './property-counties-failed.repository';
 
 @Injectable()
 export class PropertyRepository extends Repository<Property> {
-  constructor(private readonly dataSource: DataSource) {
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly countyRepository: CountyRepository,
+    private readonly propertyCountiesFailedRepository: PropertyCountiesFailedRepository,
+  ) {
     super(Property, dataSource.createEntityManager());
   }
 
@@ -167,19 +173,10 @@ export class PropertyRepository extends Repository<Property> {
     };
   }
 
-  async createProperty(data: any) {
-    console.log(`ZPID IN REP: ${data.zpid}`);
-    const propertyExist = await this.findOneBy({ zpid: data.zpid });
-    if (propertyExist) {
-      console.log(`Property with ${data.zpid} already exist`);
-      return;
-    }
+  async createProperty(createPropertyDto: any) {
+    // CREATE NEW PROPERTY
     const property = new Property();
-    Object.assign(property, data);
-    property.realtorName = data.listing_provided_by.name;
-    property.realtorPhone = data.listing_provided_by.phone_number;
-    property.realtorCompany = data.listing_provided_by.company;
-    property.realtorEmail = data.listing_provided_by.email;
+    Object.assign(property, createPropertyDto);
     await this.save(property);
     console.log(`Property with ZPID: ${property.zpid} is saved to database`);
   }

@@ -8,6 +8,8 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsBoolean,
+  IsDate,
   IsEnum,
   IsNotEmpty,
   IsNumber,
@@ -17,6 +19,7 @@ import {
 import { State } from '../enums/state.enum';
 import { Type } from 'class-transformer';
 import { Subscription } from './subscription.entity';
+import { Property } from './property.entity';
 
 @Entity('counties')
 export class County {
@@ -64,6 +67,32 @@ export class County {
     },
   )
   subscriptions: Subscription[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @OneToMany(() => Property, (properties) => properties.county, {
+    nullable: true,
+    lazy: true,
+  })
+  properties?: Property[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDate()
+  @Column({ name: 'scrapping_end_date', nullable: true })
+  scrappingEndDate: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @Column({ name: 'daily_scrapper_link', nullable: true })
+  dailyScrapperLink: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  @Column({ name: 'initial_scrapper_link', nullable: true })
+  initialScrapperLink: string;
 
   @ApiProperty()
   @CreateDateColumn()

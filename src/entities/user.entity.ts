@@ -136,11 +136,6 @@ export class User {
   @Column({ name: 'phone_number', nullable: true })
   phoneNumber: string;
 
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @ManyToMany((): typeof Property => Property, (property) => property.users)
-  properties: Promise<Property[]>;
-
   @ApiProperty({ required: false, nullable: true })
   @IsOptional()
   @OneToMany(

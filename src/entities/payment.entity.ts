@@ -1,4 +1,11 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsNotEmpty, IsString } from 'class-validator';
 import { User } from './user.entity';
@@ -56,20 +63,6 @@ export class Payment {
   status: PaymentStatus;
 
   @ApiProperty({ required: true })
-  @IsDate()
-  @IsNotEmpty()
-  @Type((): DateConstructor => Date)
-  @Column({ name: 'billing_period_start' })
-  billingPeriodStart: Date;
-
-  @ApiProperty({ required: true })
-  @IsDate()
-  @IsNotEmpty()
-  @Type((): DateConstructor => Date)
-  @Column({ name: 'billing_period_end' })
-  billingPeriodEnd: Date;
-
-  @ApiProperty({ required: true })
   @ManyToOne((): typeof User => User, (user: User) => user.payments)
   user: User;
 
@@ -80,9 +73,9 @@ export class Payment {
   )
   subscription: Subscription;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

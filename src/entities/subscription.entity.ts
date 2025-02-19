@@ -1,10 +1,12 @@
 import {
-  Column, CreateDateColumn,
+  Column,
+  CreateDateColumn,
   Entity,
   ManyToOne,
   OneToMany,
-  PrimaryGeneratedColumn, UpdateDateColumn
-} from "typeorm";
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDate, IsEnum, IsNotEmpty, IsString } from 'class-validator';
 import { User } from './user.entity';
@@ -61,14 +63,14 @@ export class Subscription {
   @IsNotEmpty()
   @Type((): DateConstructor => Date)
   @Column({ name: 'current_period_start' })
-  currentPeriodStart: Date;
+  periodStart: Date;
 
   @ApiProperty({ required: true })
   @IsDate()
   @IsNotEmpty()
   @Type((): DateConstructor => Date)
   @Column({ name: 'current_period_end' })
-  currentPeriodEnd: Date;
+  periodEnd: Date;
 
   @ApiProperty({ required: true, enum: SubscriptionStatus })
   @IsEnum(SubscriptionStatus)
@@ -91,9 +93,9 @@ export class Subscription {
   @OneToMany(() => Payment, (payment) => payment.subscription)
   payments: Payment[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 }

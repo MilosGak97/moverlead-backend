@@ -12,6 +12,7 @@ import { County } from './entities/county.entity';
 import { Subscription } from './entities/subscription.entity';
 import { Payment } from './entities/payment.entity';
 import { WebsocketModule } from './websocket/websocket.module';
+import { PropertyCountiesFailed } from './entities/property-counties-failed.entity';
 
 @Module({
   imports: [
@@ -27,7 +28,14 @@ import { WebsocketModule } from './websocket/websocket.module';
       ssl: {
         rejectUnauthorized: false, // Use true if you have the certificate
       },
-      entities: [User, Property, County, Subscription, Payment],
+      entities: [
+        User,
+        Property,
+        County,
+        Subscription,
+        Payment,
+        PropertyCountiesFailed,
+      ],
     }),
     UsersModule,
     EmailModule,
