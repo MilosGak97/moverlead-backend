@@ -2,8 +2,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  ManyToMany,
-  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -16,9 +14,6 @@ import {
   IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { Property } from './property.entity';
-import { Subscription } from './subscription.entity';
-import { Payment } from './payment.entity';
 
 @Entity('users')
 export class User {
@@ -135,26 +130,6 @@ export class User {
   @Type(() => String)
   @Column({ name: 'phone_number', nullable: true })
   phoneNumber: string;
-
-  @ApiProperty({ required: false, nullable: true })
-  @IsOptional()
-  @OneToMany(
-    (): typeof Subscription => Subscription,
-    (subscription) => subscription.user,
-    { nullable: true },
-  )
-  subscriptions: Subscription[];
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @OneToMany(
-    (): typeof Payment => Payment,
-    (payment: Payment) => payment.subscription,
-    {
-      nullable: true,
-    },
-  )
-  payments: Payment[];
 
   @CreateDateColumn()
   createdAt: Date;

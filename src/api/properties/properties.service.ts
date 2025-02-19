@@ -13,8 +13,6 @@ import { streamArray } from 'stream-json/streamers/StreamArray';
 import { parser } from 'stream-json';
 import { PropertyCountiesFailedRepository } from '../../repositories/property-counties-failed.repository';
 import { CreatePropertyDto } from './dto/create-property.dto';
-import { SubscriptionRepository } from '../../repositories/subscription.repository';
-import { User } from '../../entities/user.entity';
 
 @Injectable()
 export class PropertiesService {
@@ -22,7 +20,6 @@ export class PropertiesService {
     private readonly propertyRepository: PropertyRepository,
     private readonly userRepository: UserRepository,
     private readonly countyRepository: CountyRepository,
-    private readonly subscriptionRepository: SubscriptionRepository,
     private readonly httpService: HttpService,
     private readonly propertyCountiesFailedRepository: PropertyCountiesFailedRepository,
   ) {}

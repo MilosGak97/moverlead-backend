@@ -9,8 +9,6 @@ import { PropertiesModule } from './api/properties/properties.module';
 import { SettingsModule } from './api/settings/settings.module';
 import { StripeModule } from './api/stripe/stripe.module';
 import { County } from './entities/county.entity';
-import { Subscription } from './entities/subscription.entity';
-import { Payment } from './entities/payment.entity';
 import { WebsocketModule } from './websocket/websocket.module';
 import { PropertyCountiesFailed } from './entities/property-counties-failed.entity';
 
@@ -32,8 +30,6 @@ import { PropertyCountiesFailed } from './entities/property-counties-failed.enti
         User,
         Property,
         County,
-        Subscription,
-        Payment,
         PropertyCountiesFailed,
       ],
     }),

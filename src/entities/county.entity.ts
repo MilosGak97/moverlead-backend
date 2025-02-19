@@ -2,13 +2,13 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import {
-  IsBoolean,
   IsDate,
   IsEnum,
   IsNotEmpty,
@@ -18,7 +18,6 @@ import {
 } from 'class-validator';
 import { State } from '../enums/state.enum';
 import { Type } from 'class-transformer';
-import { Subscription } from './subscription.entity';
 import { Property } from './property.entity';
 
 @Entity('counties')
@@ -59,16 +58,6 @@ export class County {
   amount: number;
 
   @ApiProperty({ required: false })
-  @OneToMany(
-    (): typeof Subscription => Subscription,
-    (subscription) => subscription.county,
-    {
-      nullable: true,
-    },
-  )
-  subscriptions: Subscription[];
-
-  @ApiProperty({ required: false })
   @IsOptional()
   @OneToMany(() => Property, (properties) => properties.county, {
     nullable: true,
@@ -93,6 +82,7 @@ export class County {
   @IsString()
   @Column({ name: 'initial_scrapper_link', nullable: true })
   initialScrapperLink: string;
+
 
   @ApiProperty()
   @CreateDateColumn()

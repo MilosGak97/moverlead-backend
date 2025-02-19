@@ -42,10 +42,9 @@ export class StripeController {
       const rawBody = (req as any).rawBody || req.body;
 
       console.log('Raw body type:', typeof rawBody);
-      console.log('Raw body:', rawBody);
       await this.stripeService.processWebhook(rawBody, sig);
       //await this.stripeService.processWebhook(req.body, sig);
-      res.status(200).send('Received');
+      res.status(200).send(rawBody);
     } catch (err) {
       console.error('Webhook processing error:', err);
       res.status(400).send(`Webhook Error: ${err.message}`);

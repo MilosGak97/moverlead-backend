@@ -4,6 +4,7 @@ import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 import { CountyRepository } from '../../repositories/county.repository';
 import { UserRepository } from '../../repositories/user.repository';
 import { CreateCheckoutSessionResponseDto } from './dto/create-checkout-session-response.dto';
+import { MyGateway } from '../../websocket/gateway';
 
 @Injectable()
 export class StripeService {
@@ -12,6 +13,7 @@ export class StripeService {
   constructor(
     private readonly countyRepository: CountyRepository,
     private readonly userRepository: UserRepository,
+    private readonly gateway: MyGateway,
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   }
@@ -23,8 +25,8 @@ export class StripeService {
     try {
       const user = await this.userRepository.findOne({ where: { id: userId } });
 
-      let userStripeId = user?.stripeId;
-      if (!userStripeId) {
+      let stripeUserId = user?.stripeId;
+      if (!stripeUserId) {
         const customer = await this.stripe.customers.create({
           email: user.email,
           name: `${user.firstName} ${user.lastName}`.trim(),
@@ -32,9 +34,9 @@ export class StripeService {
             userId: user.id,
           },
         });
-        userStripeId = customer.id;
+        stripeUserId = customer.id;
 
-        user.stripeId = userStripeId;
+        user.stripeId = stripeUserId;
         await this.userRepository.save(user);
       }
 
@@ -47,7 +49,7 @@ export class StripeService {
 
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card'],
-        customer: userStripeId,
+        customer: stripeUserId,
         line_items: lineItems,
         mode: 'subscription',
         success_url: `${process.env.SUCCESS_URL}`,
@@ -79,9 +81,10 @@ export class StripeService {
       if (event.type === 'checkout.session.completed') {
         const session = event.data.object as Stripe.Checkout.Session;
         console.log('Payment Successful:', session);
-
         // Handle post-payment actions (e.g., create user subscription in DB)
-        await this.handleSuccessfulPayment(session);
+
+        // Emit event to WebSocket clients
+        this.gateway.sendPaymentSuccessEvent('new_subscription');
       }
 
       if (event.type === 'checkout.session.expired') {
@@ -94,34 +97,5 @@ export class StripeService {
       console.error('Webhook Error:', err.message);
       throw new Error(`Webhook Error: ${err.message}`);
     }
-  }
-
-  async handleSuccessfulPayment(session: Stripe.Checkout.Session) {
-    const metadata = session.metadata; // Retrieve custom metadata
-
-    console.log('Metadata:', metadata);
-
-    // Check if session.subscription is a valid string
-    const subscriptionId = session.subscription;
-
-    if (typeof subscriptionId !== 'string') {
-      throw new Error('Invalid subscription ID received.');
-    }
-
-    // Save subscription details to the database
-    await this.createSubscription({
-      customerEmail: session.customer_email,
-      subscriptionId: subscriptionId,
-      metadata,
-    });
-  }
-
-  async createSubscription(data: {
-    customerEmail: string;
-    subscriptionId: string;
-    metadata: any;
-  }) {
-    // Save to database (example logic)
-    console.log('Saving subscription to database:', data);
   }
 }

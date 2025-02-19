@@ -36,4 +36,13 @@ export class MyGateway implements OnModuleInit {
       });
     });
   }
+
+  // New method to send payment success event
+  sendPaymentSuccessEvent(session: string) {
+    this.server.emit('payment-success', {
+      message: 'Payment Successful',
+      session,
+    });
+    console.log('Payment event sent to clients:', session);
+  }
 }

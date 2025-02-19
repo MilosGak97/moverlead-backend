@@ -11,8 +11,6 @@ import { CountyRepository } from '../../repositories/county.repository';
 import { PropertyCountiesFailed } from '../../entities/property-counties-failed.entity';
 import { County } from '../../entities/county.entity';
 import { PropertyCountiesFailedRepository } from '../../repositories/property-counties-failed.repository';
-import { Subscription } from '../../entities/subscription.entity';
-import { SubscriptionRepository } from '../../repositories/subscription.repository';
 
 @Module({
   imports: [
@@ -21,7 +19,6 @@ import { SubscriptionRepository } from '../../repositories/subscription.reposito
       User,
       PropertyCountiesFailed,
       County,
-      Subscription,
     ]),
     HttpModule,
   ],
@@ -31,7 +28,6 @@ import { SubscriptionRepository } from '../../repositories/subscription.reposito
     PropertyRepository,
     UserRepository,
     CountyRepository,
-    SubscriptionRepository,
     PropertyCountiesFailedRepository,
   ],
 })
