@@ -26,12 +26,7 @@ import { PropertyCountiesFailed } from './entities/property-counties-failed.enti
       ssl: {
         rejectUnauthorized: false, // Use true if you have the certificate
       },
-      entities: [
-        User,
-        Property,
-        County,
-        PropertyCountiesFailed,
-      ],
+      entities: [User, Property, County, PropertyCountiesFailed],
     }),
     UsersModule,
     EmailModule,

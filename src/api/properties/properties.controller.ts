@@ -20,6 +20,8 @@ import { StateResponseDto } from './dto/state-response.dto';
 import { GetDashboardResponseDto } from './dto/get-dashboard.response.dto';
 import { GetProductsDto } from './dto/get-products-dto';
 import { County } from '../../entities/county.entity';
+import { GetSubscriptionsDto } from './dto/get-subscriptions.dto';
+import { GetSubscriptionsResponseDto } from './dto/get-subscriptions-response.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('properties')
@@ -71,16 +73,29 @@ export class PropertiesController {
     return this.propertiesService.listStates();
   }
 
-  @Post('scrapper/manual-run/:id')
+  @Post('scrapper/fetch-snapshot-data/:id')
   @ApiOperation({ summary: 'Manually run the scrapper per brightdata ID' })
-  async manualRunScrapper(@Param('id') id: string) {
-    return await this.propertiesService.manualRunScrapper(id);
+  async fetchSnapshotData(@Param('id') id: string) {
+    return await this.propertiesService.fetchSnapshotData(id);
   }
 
   @Get('/products')
   @ApiOperation({ summary: 'List products by state' })
   @ApiOkResponse({ type: [County] })
   async getProducts(@Query() getProductsDto: GetProductsDto) {
-    return this.propertiesService.getProducts(getProductsDto);
+    return await this.propertiesService.getProducts(getProductsDto);
+  }
+
+  @Get('/subscriptions')
+  @ApiOperation({ summary: 'Get all active subscriptions for user' })
+  @ApiOkResponse({ type: GetSubscriptionsResponseDto })
+  async getSubscriptions(
+    @UserId() userId: string,
+    @Query() getSubscriptionsDto: GetSubscriptionsDto,
+  ) {
+    return await this.propertiesService.getSubscriptions(
+      userId,
+      getSubscriptionsDto,
+    );
   }
 }

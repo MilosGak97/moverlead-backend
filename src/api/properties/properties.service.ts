@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PropertyRepository } from '../../repositories/property.repository';
 import { UserRepository } from '../../repositories/user.repository';
 import { GetPropertiesDto } from './dto/get-properties.dto';
@@ -13,16 +13,27 @@ import { streamArray } from 'stream-json/streamers/StreamArray';
 import { parser } from 'stream-json';
 import { PropertyCountiesFailedRepository } from '../../repositories/property-counties-failed.repository';
 import { CreatePropertyDto } from './dto/create-property.dto';
+import { StripeService } from '../stripe/stripe.service';
+import { User } from '../../entities/user.entity';
+import { GetSubscriptionsDto } from './dto/get-subscriptions.dto';
+import { GetSubscriptionsPerStripeUserIdDto } from '../stripe/dto/get-subscriptions-per-stripe-user-id.dto';
+import { GetSubscriptionsResponseDto } from './dto/get-subscriptions-response.dto';
+import Stripe from 'stripe';
 
 @Injectable()
 export class PropertiesService {
+  private stripe: Stripe;
+
   constructor(
     private readonly propertyRepository: PropertyRepository,
     private readonly userRepository: UserRepository,
     private readonly countyRepository: CountyRepository,
     private readonly httpService: HttpService,
     private readonly propertyCountiesFailedRepository: PropertyCountiesFailedRepository,
-  ) {}
+    private readonly stripeService: StripeService,
+  ) {
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  }
 
   async getProperties(getPropertiesDto: GetPropertiesDto, userId: string) {
     return await this.propertyRepository.getProperties(
@@ -47,13 +58,13 @@ export class PropertiesService {
   }
 
   async listStates(): Promise<StateResponseDto> {
-    const states = Object.values(State);
+    const states: State[] = Object.values(State);
     return {
       states,
     };
   }
 
-  async manualRunScrapper(id: string) {
+  async fetchSnapshotData(id: string) {
     const url = `https://api.brightdata.com/datasets/v3/snapshot/${id}?format=json`;
 
     try {
@@ -99,7 +110,6 @@ export class PropertiesService {
               return;
             }
 
-
             // CHECK IF THERE IS ANY PHOTOS AND ASSIGN ONLY 576PX
             let photos = null;
             if (data.photoCount > 1) {
@@ -134,6 +144,30 @@ export class PropertiesService {
             if (listingTypeDimension != null) {
               property.listingTypeDimension = listingTypeDimension;
             }
+
+            // THIS METHOD IS CHECKING IF THERE IS ACTIVE SUBSCRIPTIONS FOR THIS COUNTY, AND ASSIGNING THOSE USERS TO PROPERTY
+            const users: User[] = [];
+
+            const subscriptions =
+              await this.stripeService.getSubscriptionsPerPriceId(
+                county.priceId,
+              );
+            if (subscriptions.data.length > 0) {
+              for (const subscription of subscriptions.data) {
+                const user: User =
+                  await this.userRepository.getUserByStripeUserId(
+                    subscription.customer.toString() as string,
+                  );
+                if (!user) {
+                  continue;
+                }
+                users.push(user);
+              }
+            }
+
+            property.price = data.price;
+            property.livingAreaValue = data.livingAreaValue;
+            property.users = users;
             property.photos = photos;
             property.county = county;
             property.countyZillow = data.county;
@@ -157,5 +191,65 @@ export class PropertiesService {
   /* PRODUCTS SERVICES */
   async getProducts(getProductsDto: GetProductsDto) {
     return this.countyRepository.getProducts(getProductsDto);
+  }
+
+  async getSubscriptions(id: string, getSubscriptionsDto: GetSubscriptionsDto) {
+    const user: User = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const getSubscriptionsResponseDto: GetSubscriptionsResponseDto[] = [];
+
+    const stripeUserId: string = user.stripeId;
+    if (!stripeUserId) {
+      return getSubscriptionsResponseDto;
+    }
+    const getSubscriptionsPerStripeUserIdDto =
+      new GetSubscriptionsPerStripeUserIdDto();
+
+    getSubscriptionsPerStripeUserIdDto.stripeSubscriptionStatus =
+      getSubscriptionsDto.stripeSubscriptionStatus;
+
+    getSubscriptionsPerStripeUserIdDto.stripeUserId = stripeUserId;
+
+    const stripeSubscriptionData =
+      await this.stripeService.getSubscriptionsPerStripeUserId(
+        getSubscriptionsPerStripeUserIdDto,
+      );
+
+    if (stripeSubscriptionData && stripeSubscriptionData.data.length > 0) {
+      for (const subscription of stripeSubscriptionData.data) {
+        const subscriptionItems = [];
+        let totalPrice = 0;
+        for (const item of subscription.items.data) {
+          const product = await this.stripe.products.retrieve(
+            item.plan.product.toString() as string,
+          );
+
+          totalPrice = totalPrice + item.price.unit_amount / 100;
+
+          subscriptionItems.push({
+            name: product.name,
+            price: item.price.unit_amount / 100,
+          });
+        }
+
+        getSubscriptionsResponseDto.push({
+          id: subscription.id,
+          status: subscription.status.toString() as string,
+          currentPeriodEnd: new Date(subscription.current_period_end * 1000),
+          currentPeriodStart: new Date(
+            subscription.current_period_start * 1000,
+          ),
+          subscriptionItems: subscriptionItems,
+          totalPrice: totalPrice,
+        });
+      }
+
+      return getSubscriptionsResponseDto;
+    } else {
+      return getSubscriptionsResponseDto;
+    }
   }
 }

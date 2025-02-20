@@ -11,15 +11,12 @@ import { CountyRepository } from '../../repositories/county.repository';
 import { PropertyCountiesFailed } from '../../entities/property-counties-failed.entity';
 import { County } from '../../entities/county.entity';
 import { PropertyCountiesFailedRepository } from '../../repositories/property-counties-failed.repository';
+import { StripeService } from '../stripe/stripe.service';
+import { MyGateway } from '../../websocket/gateway';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      Property,
-      User,
-      PropertyCountiesFailed,
-      County,
-    ]),
+    TypeOrmModule.forFeature([Property, User, PropertyCountiesFailed, County]),
     HttpModule,
   ],
   controllers: [PropertiesController],
@@ -29,6 +26,8 @@ import { PropertyCountiesFailedRepository } from '../../repositories/property-co
     UserRepository,
     CountyRepository,
     PropertyCountiesFailedRepository,
+    StripeService,
+    MyGateway,
   ],
 })
 export class PropertiesModule {}

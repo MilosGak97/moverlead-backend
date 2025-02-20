@@ -165,4 +165,8 @@ export class UserRepository extends Repository<User> {
       message: 'Successfully updated changed successfully.',
     };
   }
+
+  async getUserByStripeUserId(stripeId: string) {
+    return this.findOne({ where: { stripeId } });
+  }
 }

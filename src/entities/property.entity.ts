@@ -5,12 +5,14 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  ManyToMany,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsBoolean, IsDate, IsNotEmpty, IsOptional } from 'class-validator';
 import { FilteredStatus } from '../enums/filtered-status.enum';
 import { County } from './county.entity';
+import { User } from './user.entity';
 
 @Entity('properties')
 export class Property {
@@ -21,6 +23,16 @@ export class Property {
   @ApiProperty({ required: false })
   @ManyToOne(() => County, (county) => county.properties, { nullable: false })
   county: County;
+
+  @ApiProperty({ required: false })
+  @ManyToMany(
+    (): typeof User => User,
+    (user: User): Property[] => user.properties,
+    {
+      nullable: true,
+    },
+  )
+  users: User[];
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -92,7 +104,7 @@ export class Property {
   @ApiProperty({ required: false })
   @Type(() => Number)
   @IsOptional()
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'float' })
   price?: number;
 
   @ApiProperty({ required: false })
@@ -165,7 +177,7 @@ export class Property {
   @ApiProperty({ required: false })
   @Type(() => Number)
   @IsOptional()
-  @Column({ name: 'living_area_value', nullable: true })
+  @Column({ name: 'living_area_value', nullable: true, type: 'float' })
   livingAreaValue?: number;
 
   @ApiProperty({ required: false })

@@ -5,6 +5,7 @@ import { CountyRepository } from '../../repositories/county.repository';
 import { UserRepository } from '../../repositories/user.repository';
 import { CreateCheckoutSessionResponseDto } from './dto/create-checkout-session-response.dto';
 import { MyGateway } from '../../websocket/gateway';
+import { GetSubscriptionsPerStripeUserIdDto } from './dto/get-subscriptions-per-stripe-user-id.dto';
 
 @Injectable()
 export class StripeService {
@@ -97,5 +98,26 @@ export class StripeService {
       console.error('Webhook Error:', err.message);
       throw new Error(`Webhook Error: ${err.message}`);
     }
+  }
+
+  async getSubscriptionsPerPriceId(priceId: string) {
+    return this.stripe.subscriptions.list({
+      price: priceId,
+    });
+  }
+
+  async getSubscriptionsPerStripeUserId(
+    getSubscriptionsPerStripeUserIdDto: GetSubscriptionsPerStripeUserIdDto,
+  ) {
+    const { stripeUserId, stripeSubscriptionStatus } =
+      getSubscriptionsPerStripeUserIdDto;
+    return this.stripe.subscriptions.list({
+      customer: stripeUserId,
+      status: stripeSubscriptionStatus,
+    });
+  }
+
+  async getProduct(productId: string) {
+    return await this.stripe.products.retrieve(productId);
   }
 }

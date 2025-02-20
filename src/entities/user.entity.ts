@@ -2,8 +2,10 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  ManyToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  JoinTable,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import {
@@ -14,6 +16,7 @@ import {
   IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { Property } from './property.entity';
 
 @Entity('users')
 export class User {
@@ -131,9 +134,16 @@ export class User {
   @Column({ name: 'phone_number', nullable: true })
   phoneNumber: string;
 
+  @ApiProperty({ required: false })
+  @ManyToMany(() => Property, (property) => property.users, { nullable: true })
+  @JoinTable()
+  properties: Property[];
+
+  @ApiProperty({ required: false })
   @CreateDateColumn()
   createdAt: Date;
 
+  @ApiProperty({ required: false })
   @UpdateDateColumn()
   updatedAt: Date;
 }
