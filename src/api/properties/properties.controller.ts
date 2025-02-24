@@ -88,14 +88,19 @@ export class PropertiesController {
 
   @Get('/subscriptions')
   @ApiOperation({ summary: 'Get all active subscriptions for user' })
-  @ApiOkResponse({ type: GetSubscriptionsResponseDto })
+  @ApiOkResponse({ type: [GetSubscriptionsResponseDto] })
   async getSubscriptions(
     @UserId() userId: string,
     @Query() getSubscriptionsDto: GetSubscriptionsDto,
-  ) {
+  ): Promise<GetSubscriptionsResponseDto[]> {
     return await this.propertiesService.getSubscriptions(
       userId,
       getSubscriptionsDto,
     );
+  }
+
+  @Post('/trigger-scrapper')
+  async triggerScraper() {
+    return await this.propertiesService.triggerScraper();
   }
 }

@@ -16,9 +16,12 @@ import { CreatePropertyDto } from './dto/create-property.dto';
 import { StripeService } from '../stripe/stripe.service';
 import { User } from '../../entities/user.entity';
 import { GetSubscriptionsDto } from './dto/get-subscriptions.dto';
-import { GetSubscriptionsPerStripeUserIdDto } from '../stripe/dto/get-subscriptions-per-stripe-user-id.dto';
 import { GetSubscriptionsResponseDto } from './dto/get-subscriptions-response.dto';
 import Stripe from 'stripe';
+import { SubscriptionItemsDto } from './dto/subscription-items.dto';
+import { In } from 'typeorm';
+import { County } from '../../entities/county.entity';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class PropertiesService {
@@ -148,10 +151,9 @@ export class PropertiesService {
             // THIS METHOD IS CHECKING IF THERE IS ACTIVE SUBSCRIPTIONS FOR THIS COUNTY, AND ASSIGNING THOSE USERS TO PROPERTY
             const users: User[] = [];
 
-            const subscriptions =
-              await this.stripeService.getSubscriptionsPerPriceId(
-                county.priceId,
-              );
+            const subscriptions = await this.stripe.subscriptions.list({
+              price: county.priceId,
+            });
             if (subscriptions.data.length > 0) {
               for (const subscription of subscriptions.data) {
                 const user: User =
@@ -193,7 +195,10 @@ export class PropertiesService {
     return this.countyRepository.getProducts(getProductsDto);
   }
 
-  async getSubscriptions(id: string, getSubscriptionsDto: GetSubscriptionsDto) {
+  async getSubscriptions(
+    id: string,
+    getSubscriptionsDto: GetSubscriptionsDto,
+  ): Promise<GetSubscriptionsResponseDto[]> {
     const user: User = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new BadRequestException('User not found');
@@ -205,23 +210,16 @@ export class PropertiesService {
     if (!stripeUserId) {
       return getSubscriptionsResponseDto;
     }
-    const getSubscriptionsPerStripeUserIdDto =
-      new GetSubscriptionsPerStripeUserIdDto();
 
-    getSubscriptionsPerStripeUserIdDto.stripeSubscriptionStatus =
-      getSubscriptionsDto.stripeSubscriptionStatus;
-
-    getSubscriptionsPerStripeUserIdDto.stripeUserId = stripeUserId;
-
-    const stripeSubscriptionData =
-      await this.stripeService.getSubscriptionsPerStripeUserId(
-        getSubscriptionsPerStripeUserIdDto,
-      );
+    const stripeSubscriptionData = await this.stripe.subscriptions.list({
+      customer: stripeUserId,
+      status: getSubscriptionsDto.stripeSubscriptionStatus,
+    });
 
     if (stripeSubscriptionData && stripeSubscriptionData.data.length > 0) {
       for (const subscription of stripeSubscriptionData.data) {
-        const subscriptionItems = [];
-        let totalPrice = 0;
+        const subscriptionItems: SubscriptionItemsDto[] = [];
+        let totalPrice: number = 0;
         for (const item of subscription.items.data) {
           const product = await this.stripe.products.retrieve(
             item.plan.product.toString() as string,
@@ -250,6 +248,73 @@ export class PropertiesService {
       return getSubscriptionsResponseDto;
     } else {
       return getSubscriptionsResponseDto;
+    }
+  }
+
+  async runBrightDataDaily() {
+    // check active subscriptions
+    const subscriptions = await this.stripe.subscriptions.list({
+      status: 'active',
+    });
+    if (!subscriptions) {
+      return;
+    }
+    const priceIds: string[] = [
+      ...new Set(
+        subscriptions.data.flatMap((subscription) =>
+          subscription.items.data.map((item) => item.price.id),
+        ),
+      ),
+    ];
+
+    const counties: County[] = await this.countyRepository.find({
+      where: { priceId: In(priceIds) },
+    });
+
+    const urls = counties.flatMap((county) => county.dailyScrapperLink);
+    return urls;
+  }
+
+  async triggerScraper(): Promise<any> {
+    const payload = [
+      {
+        url: 'https://www.zillow.com/cook-county-il/?searchQueryState=%7B%22isMapVisible%22%3Atrue%2C%22mapBounds%22%3A%7B%22north%22%3A42.23010743856049%2C%22south%22%3A41.3928448047299%2C%22east%22%3A-86.88394475585939%2C%22west%22%3A-88.49069524414064%7D%2C%22filterState%22%3A%7B%22sort%22%3A%7B%22value%22%3A%22globalrelevanceex%22%7D%2C%22auc%22%3A%7B%22value%22%3Afalse%7D%2C%22fore%22%3A%7B%22value%22%3Afalse%7D%2C%22nc%22%3A%7B%22value%22%3Afalse%7D%2C%22doz%22%3A%7B%22value%22%3A%221%22%7D%2C%22fsbo%22%3A%7B%22value%22%3Afalse%7D%2C%22manu%22%3A%7B%22value%22%3Afalse%7D%2C%22land%22%3A%7B%22value%22%3Afalse%7D%7D%2C%22isListVisible%22%3Atrue%2C%22usersSearchTerm%22%3A%22Cook%20County%20IL%22%2C%22regionSelection%22%3A%5B%7B%22regionId%22%3A139%2C%22regionType%22%3A4%7D%5D%2C%22category%22%3A%22cat1%22%2C%22pagination%22%3A%7B%7D%7D',
+      },
+      {
+        url: 'https://www.zillow.com/dupage-county-il/?searchQueryState=%7B%22isMapVisible%22%3Atrue%2C%22mapBounds%22%3A%7B%22north%22%3A42.0487512162021%2C%22south%22%3A41.63029599086032%2C%22east%22%3A-87.68702987792969%2C%22west%22%3A-88.49040512207031%7D%2C%22filterState%22%3A%7B%22sort%22%3A%7B%22value%22%3A%22globalrelevanceex%22%7D%2C%22doz%22%3A%7B%22value%22%3A%221%22%7D%2C%22auc%22%3A%7B%22value%22%3Afalse%7D%2C%22fore%22%3A%7B%22value%22%3Afalse%7D%2C%22nc%22%3A%7B%22value%22%3Afalse%7D%2C%22manu%22%3A%7B%22value%22%3Afalse%7D%2C%22apa%22%3A%7B%22value%22%3Afalse%7D%2C%22land%22%3A%7B%22value%22%3Afalse%7D%2C%22con%22%3A%7B%22value%22%3Afalse%7D%2C%22apco%22%3A%7B%22value%22%3Afalse%7D%2C%22mf%22%3A%7B%22value%22%3Afalse%7D%7D%2C%22isListVisible%22%3Atrue%2C%22usersSearchTerm%22%3A%22DuPage%20County%20IL%22%2C%22category%22%3A%22cat1%22%2C%22mapZoom%22%3A11%2C%22regionSelection%22%3A%5B%7B%22regionId%22%3A1682%7D%5D%2C%22pagination%22%3A%7B%7D%7D',
+      },
+    ];
+
+    const params = {
+      dataset_id: process.env.BRIGHTDATA_DATASET_ID,
+      endpoint: process.env.BRIGHTDATA_ENDPOINT,
+      notify: process.env.BRIGHTDATA_NOTIFY,
+      format: 'json',
+      uncompressed_webhook: true,
+      include_errors: true,
+      type: 'discover_new',
+      discover_by: 'url',
+    };
+
+    const headers = {
+      Authorization: `Bearer ${process.env.BRIGHTDATA_API_KEY}`,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(process.env.BRIGHTDATA_API_URL, payload, {
+          headers,
+          params,
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      console.error(
+        'Bright Data API Error:',
+        error.response?.data || error.message,
+      );
+      throw new Error('Failed to trigger Bright Data scraping');
     }
   }
 }

@@ -36,7 +36,7 @@ export class GetSubscriptionsResponseDto {
   @ApiProperty({ required: false, isArray: true })
   @IsArray()
   @IsOptional()
-  subscriptionItems: SubscriptionItemsDto;
+  subscriptionItems: SubscriptionItemsDto[];
 
   @ApiProperty({ required: false })
   @IsNumber()
