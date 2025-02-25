@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsArray,
   IsDate,
   IsEnum,
   IsNotEmpty,
@@ -65,6 +66,12 @@ export class County {
   })
   properties?: Property[];
 
+  @ApiProperty({ required: false, isArray: true })
+  @IsArray()
+  @IsOptional()
+  @Column({ name: 'zip_codes', type: 'simple-array', nullable: true })
+  zipCodes?: string[];
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsDate()
@@ -82,7 +89,6 @@ export class County {
   @IsString()
   @Column({ name: 'initial_scrapper_link', nullable: true })
   initialScrapperLink: string;
-
 
   @ApiProperty()
   @CreateDateColumn()

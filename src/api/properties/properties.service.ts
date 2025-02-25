@@ -22,6 +22,9 @@ import { SubscriptionItemsDto } from './dto/subscription-items.dto';
 import { In } from 'typeorm';
 import { County } from '../../entities/county.entity';
 import { firstValueFrom } from 'rxjs';
+import * as fs from 'fs';
+import * as csvParser from 'csv-parser';
+import { FilteringResponseDto } from './dto/filtering-response.dto'; // Correct ESModule-style import
 
 @Injectable()
 export class PropertiesService {
@@ -45,7 +48,7 @@ export class PropertiesService {
     );
   }
 
-  async filtering(userId: string) {
+  async filtering(userId: string): Promise<FilteringResponseDto> {
     return await this.propertyRepository.filtering(userId);
   }
 
@@ -259,6 +262,7 @@ export class PropertiesService {
     if (!subscriptions) {
       return;
     }
+
     const priceIds: string[] = [
       ...new Set(
         subscriptions.data.flatMap((subscription) =>
@@ -271,8 +275,11 @@ export class PropertiesService {
       where: { priceId: In(priceIds) },
     });
 
-    const urls = counties.flatMap((county) => county.dailyScrapperLink);
-    return urls;
+    const countiesNames = counties.flatMap((county) => [
+      county.name,
+      county.state,
+    ]);
+    return { countiesNames };
   }
 
   async triggerScraper(): Promise<any> {
@@ -316,5 +323,62 @@ export class PropertiesService {
       );
       throw new Error('Failed to trigger Bright Data scraping');
     }
+  }
+
+  async processCsvFile(filePath: string): Promise<void> {
+    const results: any[] = [];
+
+    const stream = fs.createReadStream(filePath);
+    const parser = csvParser(); // Store reference to parser
+
+    stream.pipe(parser); // Pipe stream to parser
+
+    parser
+      .on('data', async (data) => {
+        parser.pause(); // ✅ Pause the parser, NOT the stream
+
+        try {
+          await this.processRow(data);
+          console.log('NEXT ONE');
+          results.push(data);
+        } catch (error) {
+          console.error('Error processing row:', error);
+        }
+
+        parser.resume(); // ✅ Resume parsing after processing
+      })
+      .on('end', () => {
+        console.log('CSV file processed successfully');
+      })
+      .on('error', (error) => {
+        console.error('Error reading CSV file:', error);
+      });
+  }
+
+  private async processRow(row: any) {
+    const county = await this.countyRepository
+      .createQueryBuilder('counties')
+      .where(`counties.name ILIKE :county`, { county: `%${row.county}%` })
+      .andWhere(`counties.state = :state`, { state: row.state })
+      .getOne();
+
+    if (!county) {
+      console.log(
+        `County in Row: ${row.county}, ${row.state} couldn't be found in database`,
+      );
+      return;
+    }
+
+    // Ensure county.zipCodes is an array (initialize if null)
+    if (!Array.isArray(county.zipCodes) || county.zipCodes === null) {
+      county.zipCodes = []; // Initialize as an empty array if null
+    }
+
+    // Add new zip code and remove duplicates
+    county.zipCodes.push(row.zip);
+    county.zipCodes = Array.from(new Set(county.zipCodes)); // Ensures uniqueness
+    await this.countyRepository.save(county); // Save to DB
+
+    console.log(`New county record saved! ${county.name}`);
   }
 }

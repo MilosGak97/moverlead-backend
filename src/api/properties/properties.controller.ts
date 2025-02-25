@@ -101,6 +101,14 @@ export class PropertiesController {
 
   @Post('/trigger-scrapper')
   async triggerScraper() {
-    return await this.propertiesService.triggerScraper();
+    return await this.propertiesService.runBrightDataDaily();
+  }
+
+  // A simple POST endpoint to process CSV from a static file path
+  @Post('process')
+  async processCsvFile(): Promise<any> {
+    const filePath = './uploads/zipcodes.csv'; // Specify the file path directly here
+    await this.propertiesService.processCsvFile(filePath);
+    return { message: 'CSV file processed successfully' };
   }
 }

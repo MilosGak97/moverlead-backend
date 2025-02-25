@@ -18,13 +18,11 @@ export class GetSubscriptionsResponseDto {
   @ApiProperty({ required: false, description: 'Unix timestamp in seconds' })
   @IsOptional()
   @IsDate()
-  @Type(() => Date)
   currentPeriodStart: Date;
 
   @ApiProperty({ required: false, description: 'Unix timestamp in seconds' })
   @IsOptional()
   @IsDate()
-  @Type(() => Date)
   currentPeriodEnd: Date;
 
   @ApiProperty({ required: false })
@@ -33,8 +31,7 @@ export class GetSubscriptionsResponseDto {
   @Type(() => String)
   status: string;
 
-  @ApiProperty({ required: false, isArray: true })
-  @IsArray()
+  @ApiProperty({ required: false, type: [SubscriptionItemsDto] })
   @IsOptional()
   subscriptionItems: SubscriptionItemsDto[];
 
