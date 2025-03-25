@@ -285,11 +285,7 @@ export class AwsService {
       // Convert DynamoDB items to a more readable format
       const failedScrappers = Items.map((item) => ({
         s3Key: item.s3Key?.S,
-        status: item.status?.S,
-        county: item.county?.S,
-        date: item.date?.S,
-        ml_read: item.ml_read?.BOOL,
-        test_read: item.test_read?.BOOL,
+        zillow_url: item.zillow_url?.S,
         attempt_count: item.attempt_count?.N
           ? parseInt(item.attempt_count.N)
           : 0,
