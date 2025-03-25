@@ -48,7 +48,7 @@ export class UserRepository extends Repository<User> {
       where: { email: registerDto.email },
     });
     if (userExist) {
-      throw new BadRequestException('User already exists with this email');
+      throw new BadRequestException('User already exists with this aws');
     }
 
     const salt: string = await bcrypt.genSalt(10);
@@ -83,7 +83,7 @@ export class UserRepository extends Repository<User> {
     const user = await this.findOne({ where: { id: userId } });
     if (!user) {
       console.log(
-        'User is not found in verify email function in user repository.',
+        'User is not found in verify aws function in user repository.',
       );
       throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
     }

@@ -36,6 +36,36 @@ export class Property {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @Column({ name: 'home_status', nullable: true })
+  homeStatus?: string; // homeStatus
+
+  /* most likely delete it */
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDate()
+  @Column({ name: 'home_status_date', nullable: true })
+  homeStatusDate?: Date;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDate()
+  @Column({ name: 'coming_soon_date', nullable: true })
+  comingSoonDate?: Date;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDate()
+  @Column({ name: 'for_sale_date', nullable: true })
+  forSaleDate?: Date;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDate()
+  @Column({ name: 'pending_date', nullable: true })
+  pendingDate?: Date;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
   @Column({ name: 'filtered_status', nullable: true })
   filteredStatus: FilteredStatus;
 
@@ -111,17 +141,6 @@ export class Property {
   @IsOptional()
   @Column({ name: 'home_type', nullable: true })
   homeType?: string; // homeType
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @Column({ name: 'home_status', nullable: true })
-  homeStatus?: string; // homeStatus
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsDate()
-  @Column({ name: 'home_status_date', nullable: true })
-  homeStatusDate?: Date;
 
   @ApiProperty({ required: false })
   @IsOptional()

@@ -13,6 +13,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.setGlobalPrefix('api');
   app.use(cookieParser());
+
+  app.use(bodyParser.json({ limit: '50mb' }));
+  app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
+
   app.useGlobalPipes(new ValidationPipe());
   app.use(
     '/api/stripe/webhook',
@@ -45,7 +49,7 @@ async function bootstrap() {
     res.json(document);
   });
 
-  await app.listen(process.env.PORT ?? 3007);
+  await app.listen(process.env.PORT ?? 3008);
 }
 
 bootstrap();

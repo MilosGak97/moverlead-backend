@@ -129,7 +129,6 @@ export class PropertyRepository extends Repository<Property> {
   async getDashboard(userId: string): Promise<GetDashboardResponseDto> {
     const lastMonthStart = startOfMonth(subMonths(new Date(), 1)); // First day of last month
     const lastMonthEnd = endOfMonth(subMonths(new Date(), 1)); // Last day of last month
-
     const queryBuilderLastMonth = this.createQueryBuilder('properties')
       .leftJoinAndSelect('properties.users', 'user')
       .where('user.id = :userId', { userId })
@@ -165,6 +164,13 @@ export class PropertyRepository extends Repository<Property> {
       });
 
     const todayCount: number = await queryBuilderToday.getCount();
+
+    // DUMMY DATA UNTIL ITS FIXED
+    /*
+    const lastMonthCount = 2;
+    const thisMonthCount = 5;
+    const todayCount = 10;
+     */
 
     return {
       lastMonthCount,

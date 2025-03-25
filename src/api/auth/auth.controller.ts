@@ -14,7 +14,7 @@ import { RegisterResponseDto } from './dto/register-response.dto';
 import { RegisterDto } from './dto/register.dto';
 import { MessageResponseDto } from '../../dto/message-response.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { EmailService } from '../../email/email.service';
+import { EmailService } from '../../aws/email.service';
 import { ValidateUserDto } from './dto/validate-user-dto';
 import { User } from '../../entities/user.entity';
 import { Request } from 'express';
@@ -35,7 +35,7 @@ export class AuthController {
     const user: User = await this.authService.validateUser(validateUserDto);
     /*
     const { access_token, refresh_token } = await this.authService.login(
-      user.email,
+      user.aws,
       user.id,
     );
 
@@ -101,7 +101,7 @@ export class AuthController {
     return await this.authService.whoAmI(token);
   }
 
-  @Post('verify-email')
+  @Post('verify-aws')
   async verifyEmail(
     @Body() verifyEmailDto: VerifyEmailDto,
     @Req() req: Request,

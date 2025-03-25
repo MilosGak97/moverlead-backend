@@ -84,7 +84,7 @@ export class StripeService {
         // Handle post-payment actions (e.g., create user subscription in DB)
 
         // Emit event to WebSocket clients
-        this.gateway.sendPaymentSuccessEvent('new_subscription');
+        this.gateway.sendPaymentSuccessEvent(session.subscription as string);
       }
 
       if (event.type === 'checkout.session.expired') {
@@ -98,5 +98,4 @@ export class StripeService {
       throw new Error(`Webhook Error: ${err.message}`);
     }
   }
-
 }

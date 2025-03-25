@@ -2,7 +2,6 @@ import {
   Column,
   CreateDateColumn,
   Entity,
-  ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -78,17 +77,11 @@ export class County {
   @Column({ name: 'scrapping_end_date', nullable: true })
   scrappingEndDate: string;
 
-  @ApiProperty({ required: false })
+  @ApiProperty({ required: false, isArray: true })
+  @IsArray()
   @IsOptional()
-  @IsString()
-  @Column({ name: 'daily_scrapper_link', nullable: true })
-  dailyScrapperLink: string;
-
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsString()
-  @Column({ name: 'initial_scrapper_link', nullable: true })
-  initialScrapperLink: string;
+  @Column({ name: 'zillow_links', type: 'simple-array', nullable: true })
+  zillowLinks?: string[];
 
   @ApiProperty()
   @CreateDateColumn()

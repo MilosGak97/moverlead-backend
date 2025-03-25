@@ -47,7 +47,7 @@ export class EmailService {
       return true;
     } catch (err) {
       console.log(err);
-      throw new Error('Could not send email');
+      throw new Error('Could not send aws');
     }
   }
 }

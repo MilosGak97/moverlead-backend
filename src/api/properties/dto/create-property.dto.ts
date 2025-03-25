@@ -12,10 +12,6 @@ export class CreatePropertyDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
-  users: User[];
-
-  @ApiProperty({ required: false })
-  @IsOptional()
   filteredStatus: FilteredStatus;
 
   @ApiProperty({ required: false })

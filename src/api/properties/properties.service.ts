@@ -1,9 +1,11 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+} from '@nestjs/common';
 import { PropertyRepository } from '../../repositories/property.repository';
 import { UserRepository } from '../../repositories/user.repository';
 import { GetPropertiesDto } from './dto/get-properties.dto';
 import { FilteringActionDto } from './dto/filtering-action.dto';
-import { State } from '../../enums/state.enum';
 import { StateResponseDto } from './dto/state-response.dto';
 import { GetDashboardResponseDto } from './dto/get-dashboard.response.dto';
 import { HttpService } from '@nestjs/axios';
@@ -19,12 +21,11 @@ import { GetSubscriptionsDto } from './dto/get-subscriptions.dto';
 import { GetSubscriptionsResponseDto } from './dto/get-subscriptions-response.dto';
 import Stripe from 'stripe';
 import { SubscriptionItemsDto } from './dto/subscription-items.dto';
-import { In } from 'typeorm';
-import { County } from '../../entities/county.entity';
-import { firstValueFrom } from 'rxjs';
 import * as fs from 'fs';
 import * as csvParser from 'csv-parser';
-import { FilteringResponseDto } from './dto/filtering-response.dto'; // Correct ESModule-style import
+import { FilteringResponseDto } from './dto/filtering-response.dto';
+import { DaysOnZillow } from '../../enums/days-on-zillow.enum';
+import { statesArray } from './dto/states.array'; // Correct ESModule-style import
 
 @Injectable()
 export class PropertiesService {
@@ -63,14 +64,11 @@ export class PropertiesService {
     return await this.propertyRepository.getDashboard(userId);
   }
 
-  async listStates(): Promise<StateResponseDto> {
-    const states: State[] = Object.values(State);
-    return {
-      states,
-    };
+  async listStates(): Promise<StateResponseDto[]> {
+    return Object.values(statesArray);
   }
 
-  async fetchSnapshotData(id: string) {
+  async fetchSnapshotData(id: string, daysOnZillow: string) {
     const url = `https://api.brightdata.com/datasets/v3/snapshot/${id}?format=json`;
 
     try {
@@ -90,24 +88,30 @@ export class PropertiesService {
         .pipe(parser())
         .pipe(streamArray())
         .on('data', async ({ value: data }) => {
+          console.log('get here 1');
           if (data.zpid) {
+            console.log('get here 2');
             const propertyExist = await this.propertyRepository.findOneBy({
               zpid: data.zpid,
             });
 
+            console.log('get here 3');
             // CHECK IF PROPERTY ALREADY EXIST BY CHECKING ZPID
             if (propertyExist) {
               console.log(`Property with ${data.zpid} already exist`);
               return;
             }
 
+            console.log('get here 4');
             // CHECK IF COUNTY EXIST BY CHECKING DATA COUNTY NAME AND STATE
             const county = await this.countyRepository.findOne({
               where: { name: data.county, state: data.state },
             });
 
+            console.log('get here 5');
             // IF COUNTY DOESN'T EXIST, NOTE IT IN DATABASE SO WE CAN INSPECT WHY IT DOESN'T EXIST
             if (!county) {
+              console.log('get here 6');
               await this.propertyCountiesFailedRepository.createRecord(
                 data.county,
                 data.state,
@@ -116,6 +120,7 @@ export class PropertiesService {
               return;
             }
 
+            console.log('get here 7');
             // CHECK IF THERE IS ANY PHOTOS AND ASSIGN ONLY 576PX
             let photos = null;
             if (data.photoCount > 1) {
@@ -127,11 +132,11 @@ export class PropertiesService {
                 })
                 .filter((url) => url);
             }
-            //listing_type_dimension
-            // New Construction Plan, New Construction Plan, New Construction Spec - ignore
+            //listingTypeDimension
+            // New Construction Plan, New Construction Spec - ignore
             if (
-              data.listing_type_dimension === 'New Construction Plan' ||
-              data.listing_type_dimension === 'New Construction Spec'
+              data.listingTypeDimension === 'New Construction Plan' ||
+              data.listingTypeDimension === 'New Construction Spec'
             ) {
               return;
             }
@@ -140,7 +145,7 @@ export class PropertiesService {
 
             // For Sale by Agent, For Sale by Owner, Coming Soon, Pre-Foreclosure (PreAuction),
             // Unknown Listed By - Foreclosure, Auction (Sold by bank)
-            if (data.listing_type_dimension === 'Unknown Listed By') {
+            if (data.listingTypeDimension === 'Unknown Listed By') {
               listingTypeDimension = 'Sale by Bank';
             }
 
@@ -151,28 +156,8 @@ export class PropertiesService {
               property.listingTypeDimension = listingTypeDimension;
             }
 
-            // THIS METHOD IS CHECKING IF THERE IS ACTIVE SUBSCRIPTIONS FOR THIS COUNTY, AND ASSIGNING THOSE USERS TO PROPERTY
-            const users: User[] = [];
-
-            const subscriptions = await this.stripe.subscriptions.list({
-              price: county.priceId,
-            });
-            if (subscriptions.data.length > 0) {
-              for (const subscription of subscriptions.data) {
-                const user: User =
-                  await this.userRepository.getUserByStripeUserId(
-                    subscription.customer.toString() as string,
-                  );
-                if (!user) {
-                  continue;
-                }
-                users.push(user);
-              }
-            }
-
             property.price = data.price;
             property.livingAreaValue = data.livingAreaValue;
-            property.users = users;
             property.photos = photos;
             property.county = county;
             property.countyZillow = data.county;
@@ -180,7 +165,9 @@ export class PropertiesService {
             property.realtorPhone = data.listing_provided_by.phone_number;
             property.realtorCompany = data.listing_provided_by.company;
             property.homeStatusDate = new Date();
-            property.initialScrape = true;
+            if (daysOnZillow === DaysOnZillow.THREE_YEARS) {
+              property.initialScrape = true;
+            }
             await this.propertyRepository.createProperty(property);
           }
         })
@@ -254,77 +241,7 @@ export class PropertiesService {
     }
   }
 
-  async runBrightDataDaily() {
-    // check active subscriptions
-    const subscriptions = await this.stripe.subscriptions.list({
-      status: 'active',
-    });
-    if (!subscriptions) {
-      return;
-    }
-
-    const priceIds: string[] = [
-      ...new Set(
-        subscriptions.data.flatMap((subscription) =>
-          subscription.items.data.map((item) => item.price.id),
-        ),
-      ),
-    ];
-
-    const counties: County[] = await this.countyRepository.find({
-      where: { priceId: In(priceIds) },
-    });
-
-    const countiesNames = counties.flatMap((county) => [
-      county.name,
-      county.state,
-    ]);
-    return { countiesNames };
-  }
-
-  async triggerScraper(): Promise<any> {
-    const payload = [
-      {
-        url: 'https://www.zillow.com/cook-county-il/?searchQueryState=%7B%22isMapVisible%22%3Atrue%2C%22mapBounds%22%3A%7B%22north%22%3A42.23010743856049%2C%22south%22%3A41.3928448047299%2C%22east%22%3A-86.88394475585939%2C%22west%22%3A-88.49069524414064%7D%2C%22filterState%22%3A%7B%22sort%22%3A%7B%22value%22%3A%22globalrelevanceex%22%7D%2C%22auc%22%3A%7B%22value%22%3Afalse%7D%2C%22fore%22%3A%7B%22value%22%3Afalse%7D%2C%22nc%22%3A%7B%22value%22%3Afalse%7D%2C%22doz%22%3A%7B%22value%22%3A%221%22%7D%2C%22fsbo%22%3A%7B%22value%22%3Afalse%7D%2C%22manu%22%3A%7B%22value%22%3Afalse%7D%2C%22land%22%3A%7B%22value%22%3Afalse%7D%7D%2C%22isListVisible%22%3Atrue%2C%22usersSearchTerm%22%3A%22Cook%20County%20IL%22%2C%22regionSelection%22%3A%5B%7B%22regionId%22%3A139%2C%22regionType%22%3A4%7D%5D%2C%22category%22%3A%22cat1%22%2C%22pagination%22%3A%7B%7D%7D',
-      },
-      {
-        url: 'https://www.zillow.com/dupage-county-il/?searchQueryState=%7B%22isMapVisible%22%3Atrue%2C%22mapBounds%22%3A%7B%22north%22%3A42.0487512162021%2C%22south%22%3A41.63029599086032%2C%22east%22%3A-87.68702987792969%2C%22west%22%3A-88.49040512207031%7D%2C%22filterState%22%3A%7B%22sort%22%3A%7B%22value%22%3A%22globalrelevanceex%22%7D%2C%22doz%22%3A%7B%22value%22%3A%221%22%7D%2C%22auc%22%3A%7B%22value%22%3Afalse%7D%2C%22fore%22%3A%7B%22value%22%3Afalse%7D%2C%22nc%22%3A%7B%22value%22%3Afalse%7D%2C%22manu%22%3A%7B%22value%22%3Afalse%7D%2C%22apa%22%3A%7B%22value%22%3Afalse%7D%2C%22land%22%3A%7B%22value%22%3Afalse%7D%2C%22con%22%3A%7B%22value%22%3Afalse%7D%2C%22apco%22%3A%7B%22value%22%3Afalse%7D%2C%22mf%22%3A%7B%22value%22%3Afalse%7D%7D%2C%22isListVisible%22%3Atrue%2C%22usersSearchTerm%22%3A%22DuPage%20County%20IL%22%2C%22category%22%3A%22cat1%22%2C%22mapZoom%22%3A11%2C%22regionSelection%22%3A%5B%7B%22regionId%22%3A1682%7D%5D%2C%22pagination%22%3A%7B%7D%7D',
-      },
-    ];
-
-    const params = {
-      dataset_id: process.env.BRIGHTDATA_DATASET_ID,
-      endpoint: process.env.BRIGHTDATA_ENDPOINT,
-      notify: process.env.BRIGHTDATA_NOTIFY,
-      format: 'json',
-      uncompressed_webhook: true,
-      include_errors: true,
-      type: 'discover_new',
-      discover_by: 'url',
-    };
-
-    const headers = {
-      Authorization: `Bearer ${process.env.BRIGHTDATA_API_KEY}`,
-      'Content-Type': 'application/json',
-    };
-
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(process.env.BRIGHTDATA_API_URL, payload, {
-          headers,
-          params,
-        }),
-      );
-      return response.data;
-    } catch (error) {
-      console.error(
-        'Bright Data API Error:',
-        error.response?.data || error.message,
-      );
-      throw new Error('Failed to trigger Bright Data scraping');
-    }
-  }
-
+  /* ---------------- DELETE FROM HERE AFTER IMPORTING WISCONSIN TOO-----------------------*/
   async processCsvFile(filePath: string): Promise<void> {
     const results: any[] = [];
 
@@ -335,7 +252,7 @@ export class PropertiesService {
 
     parser
       .on('data', async (data) => {
-        parser.pause(); // ✅ Pause the parser, NOT the stream
+        parser.pause(); // Pause the parser, NOT the stream
 
         try {
           await this.processRow(data);
@@ -345,7 +262,7 @@ export class PropertiesService {
           console.error('Error processing row:', error);
         }
 
-        parser.resume(); // ✅ Resume parsing after processing
+        parser.resume(); // Resume parsing after processing
       })
       .on('end', () => {
         console.log('CSV file processed successfully');

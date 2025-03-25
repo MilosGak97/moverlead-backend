@@ -2,7 +2,7 @@ import { HttpException, HttpStatus, Injectable, Res } from '@nestjs/common';
 import { RegisterDto } from './dto/register.dto';
 import { UserRepository } from '../../repositories/user.repository';
 import { JwtService } from '@nestjs/jwt';
-import { EmailService } from '../../email/email.service';
+import { EmailService } from '../../aws/email.service';
 import { ValidateUserDto } from './dto/validate-user-dto';
 import { VerifyEmailDto } from './dto/verify-email-dto';
 import { MessageResponseDto } from '../../dto/message-response.dto';

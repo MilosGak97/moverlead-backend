@@ -3,7 +3,7 @@ import { AuthModule } from './api/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { UsersModule } from './api/users/users.module';
-import { EmailModule } from './email/email.module';
+import { AwsModule } from './aws/aws.module';
 import { Property } from './entities/property.entity';
 import { PropertiesModule } from './api/properties/properties.module';
 import { SettingsModule } from './api/settings/settings.module';
@@ -11,6 +11,7 @@ import { StripeModule } from './api/stripe/stripe.module';
 import { County } from './entities/county.entity';
 import { WebsocketModule } from './websocket/websocket.module';
 import { PropertyCountiesFailed } from './entities/property-counties-failed.entity';
+import { ScrapperModule } from './api/scrapper/scrapper.module';
 
 @Module({
   imports: [
@@ -29,11 +30,12 @@ import { PropertyCountiesFailed } from './entities/property-counties-failed.enti
       entities: [User, Property, County, PropertyCountiesFailed],
     }),
     UsersModule,
-    EmailModule,
+    AwsModule,
     PropertiesModule,
     SettingsModule,
     StripeModule,
     WebsocketModule,
+    ScrapperModule,
   ],
 })
 export class AppModule {}
