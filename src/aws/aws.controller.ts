@@ -1,9 +1,10 @@
 import { Body, Controller, Param, Post } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { AwsService } from './aws.service';
 import { UploadResultsDto } from './dto/upload-results.dto';
 import { StartedScrapperDto } from './dto/started-scrapper.dto';
 import { ScrappingErrorDto } from './dto/scrapping-error.dto';
+import { FailedScrapperResponseDto } from './dto/failed-scrapper-response.dto';
 
 @ApiTags('aws')
 @Controller('aws')
@@ -41,6 +42,7 @@ export class AwsController {
   }
 
   @Post('check-failed-scrapper')
+  @ApiOkResponse({ type: FailedScrapperResponseDto })
   async checkFailedScrapper() {
     return await this.awsService.checkFailedScrapper();
   }

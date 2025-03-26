@@ -11,6 +11,7 @@ import {
 import { StartedScrapperDto } from './dto/started-scrapper.dto';
 import { UploadResultsDto } from './dto/upload-results.dto';
 import { ScrappingErrorDto } from './dto/scrapping-error.dto';
+import { FailedScrapperResponseDto } from './dto/failed-scrapper-response.dto';
 
 @Injectable()
 export class AwsService {
@@ -258,7 +259,7 @@ export class AwsService {
     }
   }
 
-  async checkFailedScrapper() {
+  async checkFailedScrapper(): Promise<FailedScrapperResponseDto[] | []>{
     try {
       // Parameters for scanning the DynamoDB table
       const scanParams = {
@@ -285,10 +286,8 @@ export class AwsService {
       // Convert DynamoDB items to a more readable format
       const failedScrappers = Items.map((item) => ({
         s3Key: item.s3Key?.S,
-        zillow_url: item.zillow_url?.S,
-        attempt_count: item.attempt_count?.N
-          ? parseInt(item.attempt_count.N)
-          : 0,
+        zillowUrl: item.zillow_url?.S,
+        countyId: item.county?.S,
       }));
 
       console.log(`Found ${failedScrappers.length} failed scrappers`);
