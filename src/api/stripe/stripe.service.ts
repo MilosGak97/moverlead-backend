@@ -1,10 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import Stripe from 'stripe';
-import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
-import { CountyRepository } from '../../repositories/county.repository';
-import { UserRepository } from '../../repositories/user.repository';
-import { CreateCheckoutSessionResponseDto } from './dto/create-checkout-session-response.dto';
-import { MyGateway } from '../../websocket/gateway';
+import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
+import Stripe from "stripe";
+import { CreateCheckoutSessionDto } from "./dto/create-checkout-session.dto";
+import { CountyRepository } from "../../repositories/county.repository";
+import { UserRepository } from "../../repositories/user.repository";
+import { CreateCheckoutSessionResponseDto } from "./dto/create-checkout-session-response.dto";
+import { MyGateway } from "../../websocket/gateway";
 
 @Injectable()
 export class StripeService {
@@ -13,14 +13,14 @@ export class StripeService {
   constructor(
     private readonly countyRepository: CountyRepository,
     private readonly userRepository: UserRepository,
-    private readonly gateway: MyGateway,
+    private readonly gateway: MyGateway
   ) {
     this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
   }
 
   async createCheckoutSessionMultiple(
     createCheckoutSessionDto: CreateCheckoutSessionDto,
-    userId: string,
+    userId: string
   ): Promise<CreateCheckoutSessionResponseDto> {
     try {
       const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -48,10 +48,10 @@ export class StripeService {
       });
 
       const session = await this.stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
+        payment_method_types: ["card"],
         customer: stripeUserId,
         line_items: lineItems,
-        mode: 'subscription',
+        mode: "subscription",
         success_url: `${process.env.SUCCESS_URL}`,
         cancel_url: `${process.env.CANCEL_URL}`,
       });
@@ -63,10 +63,16 @@ export class StripeService {
     } catch (error) {
       console.error(error);
       throw new HttpException(
-        'Stripe Error: Please contact your account manager',
-        HttpStatus.BAD_REQUEST,
+        "Stripe Error: Please contact your account manager",
+        HttpStatus.BAD_REQUEST
       );
     }
+  }
+
+  async getActiveSubscriptions() {
+    return await this.stripe.subscriptions.list({
+      status: "active",
+    });
   }
 
   // AFTER THE PAYMENT IS MADE
@@ -75,26 +81,26 @@ export class StripeService {
       const event = this.stripe.webhooks.constructEvent(
         payload,
         sig,
-        process.env.STRIPE_WEBHOOK_SECRET,
+        process.env.STRIPE_WEBHOOK_SECRET
       );
 
-      if (event.type === 'checkout.session.completed') {
+      if (event.type === "checkout.session.completed") {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log('Payment Successful:', session);
+        console.log("Payment Successful:", session);
         // Handle post-payment actions (e.g., create user subscription in DB)
 
         // Emit event to WebSocket clients
         this.gateway.sendPaymentSuccessEvent(session.subscription as string);
       }
 
-      if (event.type === 'checkout.session.expired') {
+      if (event.type === "checkout.session.expired") {
         const session = event.data.object as Stripe.Checkout.Session;
-        console.log('Payment Session has expired:', session);
+        console.log("Payment Session has expired:", session);
       }
 
       return { success: true };
     } catch (err) {
-      console.error('Webhook Error:', err.message);
+      console.error("Webhook Error:", err.message);
       throw new Error(`Webhook Error: ${err.message}`);
     }
   }

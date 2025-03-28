@@ -14,6 +14,7 @@ import {
 import { GetDashboardResponseDto } from '../api/properties/dto/get-dashboard.response.dto';
 import { CountyRepository } from './county.repository';
 import { PropertyCountiesFailedRepository } from './property-counties-failed.repository';
+import { CreatePropertyDto } from 'src/api/properties/dto/create-property.dto';
 
 @Injectable()
 export class PropertyRepository extends Repository<Property> {
@@ -185,5 +186,9 @@ export class PropertyRepository extends Repository<Property> {
     Object.assign(property, createPropertyDto);
     await this.save(property);
     console.log(`Property with ZPID: ${property.zpid} is saved to database`);
+  }
+
+  async checkProperty(zpid:string){
+    
   }
 }

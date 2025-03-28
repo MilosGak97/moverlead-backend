@@ -14,7 +14,7 @@ import { RegisterResponseDto } from './dto/register-response.dto';
 import { RegisterDto } from './dto/register.dto';
 import { MessageResponseDto } from '../../dto/message-response.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { EmailService } from '../../aws/email.service';
+import { EmailService } from '../aws/email.service';
 import { ValidateUserDto } from './dto/validate-user-dto';
 import { User } from '../../entities/user.entity';
 import { Request } from 'express';

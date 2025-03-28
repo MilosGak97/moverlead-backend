@@ -18,11 +18,11 @@ import { User } from './user.entity';
 export class Property {
   @ApiProperty({ required: true })
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id?: string;
 
   @ApiProperty({ required: false })
-  @ManyToOne(() => County, (county) => county.properties, { nullable: false })
-  county: County;
+  @ManyToOne(() => County, (county) => county.properties, { nullable: true })
+  county?: County;
 
   @ApiProperty({ required: false })
   @ManyToMany(
@@ -32,19 +32,12 @@ export class Property {
       nullable: true,
     },
   )
-  users: User[];
+  users?: User[];
 
   @ApiProperty({ required: false })
   @IsOptional()
   @Column({ name: 'home_status', nullable: true })
   homeStatus?: string; // homeStatus
-
-  /* most likely delete it */
-  @ApiProperty({ required: false })
-  @IsOptional()
-  @IsDate()
-  @Column({ name: 'home_status_date', nullable: true })
-  homeStatusDate?: Date;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -67,13 +60,13 @@ export class Property {
   @ApiProperty({ required: false })
   @IsOptional()
   @Column({ name: 'filtered_status', nullable: true })
-  filteredStatus: FilteredStatus;
+  filteredStatus?: FilteredStatus;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsDate()
   @Column({ name: 'filtered_status_date', nullable: true })
-  filteredStatusDate: Date;
+  filteredStatusDate?: Date;
 
   @ApiProperty({ required: true })
   @IsNotEmpty()
@@ -81,16 +74,22 @@ export class Property {
   @Column({ name: 'initial_scrape' })
   initialScrape?: boolean;
 
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  @Column({ name: 'brightdata_enriched', nullable: true })
+  brightdataEnriched?: boolean;
+
   /* GETTING FROM PRECISELY API */
   @ApiProperty({ required: false })
   @IsOptional()
   @Column({ name: 'owner_first_name', nullable: true })
-  ownerFirstName: string;
+  ownerFirstName?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @Column({ name: 'owner_last_name', nullable: true })
-  ownerLastName: string;
+  ownerLastName?: string;
 
   /* GETTING FROM ZILLOW BRIGHT DATA API */
   @ApiProperty({ required: false })
@@ -145,7 +144,7 @@ export class Property {
   @ApiProperty({ required: false })
   @IsOptional()
   @Column({ name: 'is_off_market', nullable: true })
-  isOffMarket: boolean;
+  isOffMarket?: boolean;
 
   @ApiProperty({ required: false })
   @Type(() => String)
@@ -238,7 +237,7 @@ export class Property {
   @ApiProperty({ required: false })
   @IsOptional()
   @Column({ name: 'county_zillow', nullable: true })
-  countyZillow: string;
+  countyZillow?: string;
 
   @ApiProperty({ required: false })
   @Type((): NumberConstructor => Number)
@@ -254,9 +253,9 @@ export class Property {
   /* DEFAULT */
   @ApiProperty({ required: false })
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt?: Date;
 
   @ApiProperty({ required: false })
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt?: Date;
 }
