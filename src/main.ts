@@ -11,7 +11,6 @@ import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.setGlobalPrefix('api');
   app.use(cookieParser());
 
   app.use(bodyParser.json({ limit: '50mb' }));
@@ -37,7 +36,7 @@ async function bootstrap() {
     .build();
 
   const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory);
+  SwaggerModule.setup('', app, documentFactory);
 
   // Expose OpenAPI JSON at /api-json
   app.getHttpAdapter().get('api-json', (req, res) => {
