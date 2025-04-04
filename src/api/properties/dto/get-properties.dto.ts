@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDate, IsEnum, IsNumber, IsOptional } from 'class-validator';
+import {IsDate, IsEnum, IsNotEmpty, IsNumber, IsOptional} from 'class-validator';
 import { PropertyStatus } from '../../../enums/property-status.enum';
 import { Transform, Type } from 'class-transformer';
 import { FilteredStatus } from '../../../enums/filtered-status.enum';
@@ -48,4 +48,16 @@ export class GetPropertiesDto {
   @IsOptional()
   @Transform(({ value }) => (value === '' ? undefined : value)) // Handle empty string
   dateTo: Date; // check home status date field
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  limit: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  offset: number;
 }

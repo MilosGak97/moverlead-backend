@@ -2,12 +2,14 @@ import { Body, Controller, Get, Param, Post } from "@nestjs/common";
 import {  ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { FailedScrapperResponseDto } from "./dto/failed-scrapper-response.dto";
 import { DynamoDBService } from "./services/dynamo-db.service";
+import {S3Service} from "./services/s3.service";
 
 @ApiTags("aws")
 @Controller("aws")
 export class AwsController {
   constructor(
     private readonly dynamoDBService: DynamoDBService,
+    private readonly s3Service:  S3Service,
   ) {}
 /*
   @Post('run-scrapper')
@@ -18,12 +20,12 @@ export class AwsController {
   async uploadResults(@Body() uploadResultsDto: UploadResultsDto) {
     return await this.awsService.uploadResults(uploadResultsDto);
   }
-
+*/
   @Get("read-results/:key")
   async readResults(@Param("key") key: string) {
-    return await this.awsService.readResults(key);
+    return await this.s3Service.readResults(key);
   }
-
+/*
   @Post("scrapping-error")
   async scrappingError(@Body() scrappingErrorDto: ScrappingErrorDto) {
     return await this.awsService.scrappingError(scrappingErrorDto);

@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import {forwardRef, Module} from "@nestjs/common";
 import { ScrapperController } from "./scrapper.controller";
 import { ScrapperService } from "./scrapper.service";
 import { HttpModule } from "@nestjs/axios";
@@ -10,7 +10,7 @@ import { ScrapperProcessor } from "./scrapper.processor";
 @Module({
   imports: [
     HttpModule,
-    PropertiesModule,
+    forwardRef(() => PropertiesModule),
     AwsModule,
     BullModule.registerQueue({
       name: "scrapper",
@@ -18,5 +18,6 @@ import { ScrapperProcessor } from "./scrapper.processor";
   ],
   controllers: [ScrapperController],
   providers: [ScrapperService, ScrapperProcessor],
+  exports: [ScrapperService],
 })
 export class ScrapperModule {}

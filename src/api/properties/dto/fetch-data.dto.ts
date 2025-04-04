@@ -1,13 +1,9 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { IsBoolean, IsNotEmpty, IsString } from "class-validator";
 
-export class ExportResultsDto{
+export class FetchDataDto{
     @ApiProperty()
     @IsNotEmpty()
-    result: any;
-
-    @ApiProperty()
-    @IsString()
-    @IsNotEmpty()
-    countyId: string;
+    @IsBoolean()
+    initialScrapper: boolean;
 }

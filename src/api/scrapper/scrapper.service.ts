@@ -1,4 +1,4 @@
-import {Injectable, Logger} from "@nestjs/common";
+import {BadRequestException, forwardRef, Inject, Injectable, Logger} from "@nestjs/common";
 import {generateRandomKey} from "../common/utils/genereate-random-key";
 import {DynamoDBService} from "../aws/services/dynamo-db.service";
 import {S3Service} from "../aws/services/s3.service";
@@ -7,6 +7,10 @@ import {firstValueFrom} from "rxjs";
 import {HttpService} from "@nestjs/axios";
 import {ZillowDataDto} from "./dto/zillow-data.dto";
 import {PropertiesService} from "../properties/properties.service";
+import {ReadyScrapperResponseDto} from "../aws/dto/ready-scrapper-response.dto";
+import axios from "axios";
+import {BrightdataEnrichmentFillerDto} from "./dto/brightdata-enrichment-filler.dto";
+import {FillBrightdataDto} from "./dto/fill-brightdata-dto";
 
 @Injectable()
 export class ScrapperService {
@@ -15,13 +19,14 @@ export class ScrapperService {
     constructor(
         private readonly dynamoDBService: DynamoDBService,
         private readonly s3Service: S3Service,
+        private readonly httpService: HttpService,
+        @Inject(forwardRef(() => PropertiesService))
         private readonly propertiesService: PropertiesService,
-        private readonly httpService: HttpService
     ) {
     }
 
     // THIS EXECUTE FIRST! MAIN ONE
-    async runScrapper(zillowData?: ZillowDataDto[]) {
+    async runScrapper(initialScrapper: boolean, zillowData?: ZillowDataDto[]) {
         this.logger.log('runScrapper called.');
         // Retrieve the array of ZillowData objects (each containing a countyId and a zillowUrl)
         if (zillowData === undefined) {
@@ -35,7 +40,7 @@ export class ScrapperService {
             const key: string = await generateRandomKey();
             this.logger.log(`Processing URL with key: ${key}`);
 
-            await this.dynamoDBService.startedScrapperDynamo(key, item.countyId, item.zillowUrl);
+            await this.dynamoDBService.startedScrapperDynamo(key, item.countyId, item.zillowUrl, initialScrapper);
 
             // Define input data from Zillow link and headers
             const inputData = await this.defineInputData(item.zillowUrl);
@@ -64,7 +69,7 @@ export class ScrapperService {
                 this.logger.log(`Received ${results.length} results for ${item.zillowUrl}`);
 
                 await this.dynamoDBService.successfulScrapper(key, results.length);
-                await this.s3Service.uploadResults(results, key, item.countyId);
+                await this.s3Service.uploadResults(results, key, item.countyId, initialScrapper);
 
 
             } catch (error) {
@@ -99,12 +104,131 @@ export class ScrapperService {
         }
     }
 
+    async runFailedScrapper(initialScrapper: boolean, proxyType: 'datacenter' | 'residential' = 'datacenter') {
+        this.logger.log(`runFailedScrapper called with proxyType: ${proxyType}`);
+        const failedZillowData = await this.dynamoDBService.checkFailedScrapper();
+        this.logger.log(`Found ${failedZillowData.length} failed items to reprocess.`);
+        for (const item of failedZillowData) {
+            this.logger.log(`Reattempting failed item with key: ${item.s3Key} using ${proxyType} proxy.`);
+            await this.executeScrapper(item.zillowUrl, item.countyId, item.s3Key, proxyType, initialScrapper);
+        }
+    }
+
+    async fetchData(initialScrapper: boolean) {
+
+        const readyDataKey: ReadyScrapperResponseDto[] = await this.dynamoDBService.checkReadyScrapper(initialScrapper)
+
+        if (readyDataKey.length == 0) {
+            return 'There is no ready data found.';
+        }
+        console.log(`There is ${readyDataKey.length} snapshots ready`);
+        for (const item of readyDataKey) {
+            const data = await this.s3Service.readResults(item.s3Key);
+            await this.readRawData(data, item.countyId, initialScrapper, item.date);
+            await this.dynamoDBService.markAsDone(item.s3Key);
+        }
+    }
+
+    async brightdataSnapshotTrigger(input: any): Promise<string> {
+        if (!input || input.length === 0) {
+            throw new BadRequestException('Payload must not be empty');
+        }
+
+        const url =
+            'https://api.brightdata.com/datasets/v3/trigger' +
+            '?dataset_id=gd_m794g571225l6vm7gh' +
+            '&notify=https%3A%2F%2Fapi.moverlead.com%2Fstripe%2Fwebhook' +
+            '&include_errors=true';
+
+        const headers = {
+            Authorization: `Bearer ${process.env.BRIGHTDATA_TOKEN}`,
+            'Content-Type': 'application/json',
+        };
+
+        const data = {
+            deliver: {
+                type: 's3',
+                filename: {
+                    template: '{[snapshot_id]}',
+                    extension: 'json',
+                },
+                bucket: process.env.AWS_S3_BUCKET_NAME_BRIGHTDATA,
+                credentials: {
+                    'aws-access-key': process.env.AWS_ACCESS_KEY_ID,
+                    'aws-secret-key': process.env.AWS_SECRET_ACCESS_KEY,
+                },
+                directory: '',
+            },
+            input,
+        };
+
+        try {
+            const response = await axios.post(url, data, {headers});
+            console.log('✅ BrightData Trigger Success from Scrapper Service:', response.data.snapshot_id);
+            return response.data.snapshot_id;
+        } catch (error) {
+            console.error('❌ BrightData Trigger Failed:', error.response?.data || error.message);
+            throw error;
+        }
+    }
+
+    async brightdataEnrichmentFiller(brightdataEnrichmentFillerDto: BrightdataEnrichmentFillerDto) {
+        const {snapshotId} = brightdataEnrichmentFillerDto;
+        const rawData = await this.s3Service.readBrightdataSnapshot(snapshotId);
+
+        if (rawData.length == 0) {
+            throw new BadRequestException('Array is empty, it should be properties in there in raw data');
+        }
+        for (const raw of rawData) {
+            console.log("GETTING INTO: " + raw.zpid.toString());
+            const data: FillBrightdataDto = {
+                zpid: raw.zpid.toString(),
+                brightdataEnriched: true,
+                streetAddress: raw.address?.street_address,
+                zipcode: raw.address?.zipcode,
+                city: raw.address?.city,
+                state: raw.address?.state,
+                bedrooms: raw.bedrooms,
+                bathrooms: raw.bathrooms,
+                price: raw.price,
+                homeType: raw.home_type,
+                parcelId: raw.parcel_id,
+                realtorName: raw.attribution_info?.agent_name,
+                realtorPhone: raw.attribution_info?.agent_phone_number,
+                brokerageName: raw.attribution_info?.broker_name,
+                brokeragePhone: raw.attribution_info?.broker_phone_number,
+                latitude: raw.latitude,
+                longitude: raw.longitude,
+                livingAreaValue: raw.living_area_value,
+                daysOnZillow: raw.days_on_zillow,
+                propertyTypeDimension: raw.property_type_dimension,
+                countyZillow: raw.county,
+                photoCount: raw.photo_count,
+                photos: Array.isArray(raw.responsive_photos)
+                    ? raw.original_photos
+                        .map((photo) => photo?.mixed_sources?.jpeg?.[1]?.url)
+                        .filter((url) => url) // filters out any undefined or null values
+                    : [],
+            };
+
+            // Save to database
+            await this.propertiesService.fillBrightdata(data);
+        }
+        // something after whole snapshot is done
+        // we have to implement here probably dynamoDB to save snapshot of brightdata
+        // and mark it as done once this loop is done
+        // for now we doing it manually, running it and controlling it
+    }
+
+
+    // PRIVATE UTILS HELPERS
     // This method now accepts a proxyType parameter to select which proxy to use
-    async executeScrapper(
+    private async executeScrapper(
         zillowLink: string,
         countyId: string,
         key: string,
-        proxyType: 'datacenter' | 'residential' = 'datacenter'
+        proxyType: 'datacenter' | 'residential' = 'datacenter',
+        initialScrapper: boolean
     ) {
         this.logger.log(`executeScrapper called for ${zillowLink} using ${proxyType} proxy.`);
         const inputData = await this.defineInputData(zillowLink);
@@ -139,7 +263,7 @@ export class ScrapperService {
             this.logger.log(`Received ${results.length} results for ${zillowLink}`);
 
             await this.dynamoDBService.successfulScrapper(key, results.length);
-            await this.s3Service.uploadResults(results, countyId, key);
+            await this.s3Service.uploadResults(results, key, countyId, initialScrapper);
         } catch (error) {
             this.logger.error(`Error reprocessing URL ${zillowLink}`, error.stack);
             const errorInfo = {
@@ -169,17 +293,32 @@ export class ScrapperService {
         await new Promise((resolve) => setTimeout(resolve, randomDelay));
     }
 
-    async runFailedScrapper(proxyType: 'datacenter' | 'residential' = 'datacenter') {
-        this.logger.log(`runFailedScrapper called with proxyType: ${proxyType}`);
-        const failedZillowData = await this.dynamoDBService.checkFailedScrapper();
-        this.logger.log(`Found ${failedZillowData.length} failed items to reprocess.`);
-        for (const item of failedZillowData) {
-            this.logger.log(`Reattempting failed item with key: ${item.s3Key} using ${proxyType} proxy.`);
-            await this.executeScrapper(item.zillowUrl, item.countyId, item.s3Key, proxyType);
+    //daily
+    private async readRawData(data: any, countyId: string, initialScrapper: boolean, date: Date) {
+
+        for (const rawItem of data) {
+            console.log(rawItem.zpid)
+            // lets check if there is field zpid at all, if not -skip it
+            if (rawItem.zpid === 'undefined' || typeof rawItem.zpid === 'undefined') {
+                console.log(`One Item of RawData is advertisement. Next`)
+                continue;
+            }
+            const zpid = rawItem.zpid.toString();
+
+            // now we need to check if property with this zpid already exist, if it does, check status change
+            const propertyExist = await this.propertiesService.findProperty(zpid)
+            if (propertyExist) {
+                console.log(`Checking property value: ${propertyExist.zpid}...`);
+                await this.propertiesService.checkPropertyDaily(propertyExist, rawItem.rawHomeStatusCd, initialScrapper, date)
+                continue;
+            }
+
+            // if initial, send true value in the middle
+            await this.propertiesService.createProperty(rawItem, initialScrapper, countyId)
+            console.log(`Saved ${rawItem.zpid} as a new property. Next`)
         }
     }
 
-    // PRIVATE UTILS HELPERS
     private async defineInputData(zillowUrl: string): Promise<any> {
         // Clean up and parse the URL
         const cleanedUrl = zillowUrl.trim();

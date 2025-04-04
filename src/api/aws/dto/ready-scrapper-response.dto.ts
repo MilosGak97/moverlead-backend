@@ -1,5 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString } from "class-validator";
+import {IsDate, IsNotEmpty, IsString} from "class-validator";
 
 export class ReadyScrapperResponseDto{
     @ApiProperty()
@@ -11,4 +11,9 @@ export class ReadyScrapperResponseDto{
     @IsNotEmpty()
     @IsString()
     countyId: string;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsDate()
+    date: Date;
 }
