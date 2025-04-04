@@ -193,7 +193,7 @@ export class PropertyRepository extends Repository<Property> {
 
     async filtering(filteringDto: FilteringDto, userSubscriptions: UserSubscriptionsDto[]): Promise<FilteringResponseDto> {
 
-        const {limit, offset} = filteringDto;
+        const {limit = 10000, offset = 0} = filteringDto;
         const limitNumber = Number(limit);
         const offsetNumber = Number(offset);
         // Step 4: Apply similar logic from getProperties
