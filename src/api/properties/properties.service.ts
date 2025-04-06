@@ -1,20 +1,17 @@
 import {
-    BadRequestException, forwardRef,
+    BadRequestException, Body, forwardRef,
     HttpException,
     HttpStatus, Inject,
-    Injectable,
+    Injectable, StreamableFile,
 } from "@nestjs/common";
 import {PropertyRepository} from "../../repositories/property.repository";
 import {UserRepository} from "../../repositories/user.repository";
-import {GetPropertiesDto} from "./dto/get-properties.dto";
 import {FilteringActionDto} from "./dto/filtering-action.dto";
 import {StateResponseDto} from "./dto/state-response.dto";
 import {GetDashboardResponseDto} from "./dto/get-dashboard.response.dto";
 import {HttpService} from "@nestjs/axios";
 import {GetProductsDto} from "./dto/get-products-dto";
 import {CountyRepository} from "../../repositories/county.repository";
-import {streamArray} from "stream-json/streamers/StreamArray";
-import {parser} from "stream-json";
 import {PropertyCountiesFailedRepository} from "../../repositories/property-counties-failed.repository";
 import {StripeService} from "../stripe/stripe.service";
 import {User} from "../../entities/user.entity";
@@ -23,10 +20,8 @@ import {GetSubscriptionsResponseDto} from "./dto/get-subscriptions-response.dto"
 import Stripe from "stripe";
 import {SubscriptionItemsDto} from "./dto/subscription-items.dto";
 import {FilteringResponseDto} from "./dto/filtering-response.dto";
-import {DaysOnZillow} from "../../enums/days-on-zillow.enum";
 import {statesArray} from "./dto/states.array"; // Correct ESModule-style import
 import {CreatePropertyDto} from "./dto/create-property.dto";
-import {CreatePropertyBrightdataDto} from "./dto/create-property-brightdata.dto";
 import {County} from "src/entities/county.entity";
 import {In, IsNull} from "typeorm";
 import {ZillowDataDto} from "../scrapper/dto/zillow-data.dto";
@@ -35,10 +30,17 @@ import {ScrapperService} from "../scrapper/scrapper.service";
 import {FillBrightdataDto} from "../scrapper/dto/fill-brightdata-dto";
 import {UserSubscriptionsDto} from "./dto/user-subscriptions.dto";
 import {FilteringDto} from "./dto/filtering-dto";
+import {ListingsExportDto} from "./dto/listings-export.dto";
+import {GetListingsDto} from "./dto/get-listings.dto";
+import {Parser} from "json2csv";
+import axios from "axios";
 
 @Injectable()
 export class PropertiesService {
     private stripe: Stripe;
+    // Temporary token storage (for short-term use)
+    private accessTokenPrecisely: string = null;
+    private tokenExpirationTime: number = null;
 
     constructor(
         private readonly propertyRepository: PropertyRepository,
@@ -53,7 +55,43 @@ export class PropertiesService {
         this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
     }
 
-    async getProperties(getPropertiesDto: GetPropertiesDto, userId: string) {
+    async getDashboard(userId: string): Promise<GetDashboardResponseDto> {
+        // Step 1: Get user from DB to access stripeId
+        const user = await this.userRepository.findOneBy({id: userId});
+
+
+        // lets get now priceids (county) and when user was subscribed to that county
+        // date to and date from
+        const subscriptionsArray = await this.stripeService.getAllUserSubscriptions(user.stripeId);
+
+        if (subscriptionsArray.length == 0) {
+            throw new BadRequestException('User never had any subscriptions')
+        }
+
+
+        const userSubscriptions: UserSubscriptionsDto[] = [];
+
+        for (const sub of subscriptionsArray) {
+            const county = await this.countyRepository.findOne({
+                where: {priceId: sub.priceId},
+            });
+
+            if (!county) continue;
+
+            const dto: UserSubscriptionsDto = {
+                countyId: county.id,
+                fromDate: new Date(sub.startDate * 1000).toISOString(),
+                toDate: new Date(sub.endDate * 1000).toISOString(),
+            };
+
+            console.log('Mapped subscription:', dto); // 👈 logging here
+
+            userSubscriptions.push(dto);
+        }
+        return await this.propertyRepository.getDashboard(userSubscriptions);
+    }
+
+    async getListings(getListingsDto: GetListingsDto, userId: string) {
 
         // to get properties for this userId, we need first to get all subscriptions for that user
         // once we get all subscriptions, we also have starting and ending date + county(PRICEIDS) + userId
@@ -92,16 +130,71 @@ export class PropertiesService {
             userSubscriptions.push(dto);
         }
 
-
-        // SO LETS GET PRICEIDS FIRST
-        // its basically like getting counties
-
-        return await this.propertyRepository.getProperties(
-            getPropertiesDto,
+        return await this.propertyRepository.getListings(
+            getListingsDto,
             userSubscriptions
         );
 
 
+    }
+
+    async listingsExportDetailed(listingsExportDto: ListingsExportDto) {
+        const result = await this.propertyRepository.listingsExportDetailed(listingsExportDto)
+
+
+        // Define the fields for CSV
+        const fields = [
+            'propertyId',
+            'listingStatus',
+            'listingType',
+            'filteredStatus',
+            'streetAddress',
+            'zipcode',
+            'city',
+            'state',
+            'bedrooms',
+            'bathrooms',
+            'price',
+            'homeType',
+            'livingAreaValue',
+            'realtorName',
+            'realtorPhone',
+            'brokerageName',
+            'brokeragePhone',
+            'county',
+            'longitude',
+            'latitude',
+        ];
+
+        // Convert JSON to CSV using json2csv
+        const json2csvParser = new Parser({fields});
+        const csv = json2csvParser.parse(result);
+
+        // Create a StreamableFile from the CSV string
+        return new StreamableFile(Buffer.from(csv, 'utf-8'));
+    }
+
+    async listingsExportUsps(listingsExportDto: ListingsExportDto): Promise<StreamableFile> {
+        // Retrieve properties for USPS export from the repository.
+        const result = await this.propertyRepository.listingsExportUsps(listingsExportDto);
+
+
+        // Define CSV fields for USPS export.
+        const fields = [
+            'owner_fullname',
+            'current_resident',
+            'streetAddress',
+            'city',
+            'state',
+            'zipcode'
+        ];
+
+        // Convert the enriched (and filtered) result to CSV.
+        const json2csvParser = new Parser({fields});
+        const csv = json2csvParser.parse(result);
+
+        // Return a StreamableFile containing the CSV.
+        return new StreamableFile(Buffer.from(csv, 'utf-8'));
     }
 
     async filtering(filteringDto: FilteringDto, userId: string): Promise<FilteringResponseDto> {
@@ -147,156 +240,9 @@ export class PropertiesService {
         );
     }
 
-    async getDashboard(userId: string): Promise<GetDashboardResponseDto> {
-        // Step 1: Get user from DB to access stripeId
-        const user = await this.userRepository.findOneBy({id: userId});
-
-
-        // lets get now priceids (county) and when user was subscribed to that county
-        // date to and date from
-        const subscriptionsArray = await this.stripeService.getAllUserSubscriptions(user.stripeId);
-
-        if (subscriptionsArray.length == 0) {
-            throw new BadRequestException('User never had any subscriptions')
-        }
-
-
-        const userSubscriptions: UserSubscriptionsDto[] = [];
-
-        for (const sub of subscriptionsArray) {
-            const county = await this.countyRepository.findOne({
-                where: {priceId: sub.priceId},
-            });
-
-            if (!county) continue;
-
-            const dto: UserSubscriptionsDto = {
-                countyId: county.id,
-                fromDate: new Date(sub.startDate * 1000).toISOString(),
-                toDate: new Date(sub.endDate * 1000).toISOString(),
-            };
-
-            console.log('Mapped subscription:', dto); // 👈 logging here
-
-            userSubscriptions.push(dto);
-        }
-        return await this.propertyRepository.getDashboard(userSubscriptions);
-    }
 
     async listStates(): Promise<StateResponseDto[]> {
         return Object.values(statesArray);
-    }
-
-    async fetchSnapshotData(id: string, daysOnZillow: string) {
-        const url = `https://api.brightdata.com/datasets/v3/snapshot/${id}?format=json`;
-
-        try {
-            const response = await this.httpService.axiosRef({
-                method: "GET",
-                url,
-                responseType: "stream", // Enable streaming
-                headers: {
-                    Authorization: `Bearer ${process.env.BRIGHTDATA_TOKEN}`,
-                },
-                timeout: 200000, // Increase timeout
-            });
-
-            console.log("Starting data processing...");
-
-            response.data
-                .pipe(parser())
-                .pipe(streamArray())
-                .on("data", async ({value: data}) => {
-                    console.log("get here 1");
-                    if (data.zpid) {
-                        console.log("get here 2");
-                        const propertyExist = await this.propertyRepository.findOneBy({
-                            zpid: data.zpid,
-                        });
-
-                        console.log("get here 3");
-                        // CHECK IF PROPERTY ALREADY EXIST BY CHECKING ZPID
-                        if (propertyExist) {
-                            console.log(`Property with ${data.zpid} already exist`);
-                            return;
-                        }
-
-                        console.log("get here 4");
-                        // CHECK IF COUNTY EXIST BY CHECKING DATA COUNTY NAME AND STATE
-                        const county = await this.countyRepository.findOne({
-                            where: {name: data.county, state: data.state},
-                        });
-
-                        console.log("get here 5");
-                        // IF COUNTY DOESN'T EXIST, NOTE IT IN DATABASE SO WE CAN INSPECT WHY IT DOESN'T EXIST
-                        if (!county) {
-                            console.log("get here 6");
-                            await this.propertyCountiesFailedRepository.createRecord(
-                                data.county,
-                                data.state,
-                                data.zpid
-                            );
-                            return;
-                        }
-
-                        console.log("get here 7");
-                        // CHECK IF THERE IS ANY PHOTOS AND ASSIGN ONLY 576PX
-                        let photos = null;
-                        if (data.photoCount > 1) {
-                            const photosData = data.photos;
-                            photos = photosData
-                                .map((photo) => {
-                                    const jpegArray = photo.mixedSources.jpeg;
-                                    return jpegArray[2]?.url; // extract 576px photo only
-                                })
-                                .filter((url) => url);
-                        }
-                        //listingTypeDimension
-                        // New Construction Plan, New Construction Spec - ignore
-                        if (
-                            data.listingTypeDimension === "New Construction Plan" ||
-                            data.listingTypeDimension === "New Construction Spec"
-                        ) {
-                            return;
-                        }
-
-                        let listingTypeDimension = null;
-
-                        // For Sale by Agent, For Sale by Owner, Coming Soon, Pre-Foreclosure (PreAuction),
-                        // Unknown Listed By - Foreclosure, Auction (Sold by bank)
-                        if (data.listingTypeDimension === "Unknown Listed By") {
-                            listingTypeDimension = "Sale by Bank";
-                        }
-
-                        // CREATE NEW PROPERTY
-                        const property = new CreatePropertyBrightdataDto();
-                        Object.assign(property, data);
-                        if (listingTypeDimension != null) {
-                            property.listingTypeDimension = listingTypeDimension;
-                        }
-
-                        property.price = data.price;
-                        property.livingAreaValue = data.livingAreaValue;
-                        property.photos = photos;
-                        property.county = county;
-                        property.countyZillow = data.county;
-                        property.realtorName = data.listing_provided_by.name;
-                        property.realtorPhone = data.listing_provided_by.phone_number;
-                        property.realtorCompany = data.listing_provided_by.company;
-                        property.homeStatusDate = new Date();
-                        if (daysOnZillow === DaysOnZillow.THREE_YEARS) {
-                            property.initialScrape = true;
-                        }
-                        await this.propertyRepository.createProperty(property);
-                    }
-                })
-                .on("end", () => console.log("Finished processing all properties."))
-                .on("error", (err) =>
-                    console.error("Error while streaming data:", err.message)
-                );
-        } catch (error) {
-            console.error("Error fetching data:", error.message);
-        }
     }
 
     /* PRODUCTS SERVICES */
@@ -509,5 +455,128 @@ export class PropertiesService {
 
     }
 
-    /* ---------------- DELETE FROM HERE AFTER IMPORTING WISCONSIN TOO-----------------------*/
+    /* ---------------- DELETE FROM HERE AFTER IMPROVING PRECISELY -----------------------*/
+
+
+    // Helper to get a valid token; fetch a new one if missing or expired.
+    private async getToken(): Promise<string> {
+        if (!this.accessTokenPrecisely || Date.now() > this.tokenExpirationTime) {
+            await this.fetchToken();
+        }
+        return this.accessTokenPrecisely;
+    }
+
+    // Fetch a new token from the Precisely API.
+    private async fetchToken(): Promise<void> {
+        const key = 'QKs8U4IfxnfSAUXZCA9ttMBBOzS6rIWW';
+        const secret = 'L4VZlKATR5wy56lo';
+        const encodedCredentials = Buffer.from(`${key}:${secret}`).toString('base64');
+
+        const config = {
+            headers: {
+                'Authorization': `Basic ${encodedCredentials}`,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            }
+        };
+
+        const data = new URLSearchParams({grant_type: 'client_credentials'});
+
+        try {
+            const response = await axios.post('https://api.precisely.com/oauth/token', data, config);
+            this.accessTokenPrecisely = response.data.access_token;
+            // Set expiration time (with a 5-minute buffer before actual expiration)
+            this.tokenExpirationTime = Date.now() + (response.data.expires_in * 1000) - (5 * 60 * 1000);
+            console.log('Fetched new access token:', this.accessTokenPrecisely);
+        } catch (error) {
+            console.error(
+                'Error fetching access token:',
+                error.response ? error.response.data : error.message
+            );
+        }
+    }
+
+    async checkPrecisely(
+        listingsExportDto: ListingsExportDto) {
+        const {ids} = listingsExportDto;
+        const uuids = ids.map(idString => idString.split('_')[0]);
+
+        const properties: Property[] = await this.propertyRepository.find({where: {id: In(uuids)}})
+
+        if(properties.length == 0) {
+            throw new BadRequestException('There are no properties found in database')
+        }
+        // Process each property to enrich with owner information.
+        for (const property of properties) {
+            // If already precisely checked, do not call the API.
+            if (property.preciselyChecked) {
+              continue; // Skip further enrichment.
+            }
+
+            // Not checked yet – run the Precisely API check.
+            const fullAddress = `${property.streetAddress}, ${property.city}, ${property.state}, ${property.zipcode}`;
+            const encodedAddress = encodeURIComponent(fullAddress);
+            try {
+                const token = await this.getToken(); // Your helper method to get a valid token.
+                const response = await axios.get(
+                    `https://api.precisely.com/property/v2/attributes/byaddress?address=${encodedAddress}&attributes=owners`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json; charset=utf-8',
+                        },
+                    }
+                );
+
+                const owners = response.data.propertyAttributes?.owners;
+                if (owners && owners.length > 0) {
+                    let foundValidOwner = false; // Flag to indicate if a valid owner was found.
+                    // Look through the first three owners.
+                    for (let i = 0; i < Math.min(owners.length, 3); i++) {
+                        const owner = owners[i];
+                        if (owner.firstName && owner.lastName) {
+                            // Check if either name contains "source" (case-insensitive)
+                            if (
+                                owner.firstName.toLowerCase().includes("source") ||
+                                owner.lastName.toLowerCase().includes("source")
+                            ) {
+                                property.preciselyChecked = true;
+                                await this.propertyRepository.save(property);
+                                continue; // Skip this owner and move to the next one.
+                            }
+
+                            // Check for banned keywords.
+                            const bannedKeywords = ["llc", " inc", "corporation", "trust", "bank", "estate", "property", "association"];
+                            const firstNameLower = owner.firstName.toLowerCase();
+                            const lastNameLower = owner.lastName.toLowerCase();
+                            const hasBanned = bannedKeywords.some(keyword =>
+                                firstNameLower.includes(keyword) || lastNameLower.includes(keyword)
+                            );
+
+                            if (hasBanned) {
+                                property.ownerCommercial = true;
+                                property.preciselyChecked = true;
+                                await this.propertyRepository.save(property);
+                                continue; // Skip this owner and move to the next one.
+                            }
+
+                            // If we got here, it means we passed both checks.
+                            property.preciselyChecked = true;
+                            property.ownerFirstName = owner.firstName;
+                            property.ownerLastName = owner.lastName;
+                            await this.propertyRepository.save(property);
+                            foundValidOwner = true;
+                            break; // Stop processing further owners.
+                        }
+                    }
+                    // If no valid owner was found, still mark the property as checked.
+                    if (!foundValidOwner) {
+                        property.preciselyChecked = true;
+                        await this.propertyRepository.save(property);
+                    }
+                }
+            } catch (error) {
+                console.error(`Error retrieving owner info for address ${fullAddress}:`, error);
+            }
+        }
+    }
 }

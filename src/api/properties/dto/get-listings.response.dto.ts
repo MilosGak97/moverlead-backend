@@ -1,14 +1,14 @@
 import {ApiExtraModels, ApiProperty} from "@nestjs/swagger";
 import {IsArray, IsNotEmpty, IsNumber} from "class-validator";
-import {GetPropertyObjectDto} from "./get-property.object.dto";
+import {GetListingObjectDto} from "./get-listing.object.dto";
 import {Type} from "class-transformer";
 
-@ApiExtraModels(GetPropertyObjectDto)
-export class GetPropertiesResponseDto {
-    @ApiProperty({type: [GetPropertyObjectDto]})
+@ApiExtraModels(GetListingObjectDto)
+export class GetListingsResponseDto {
+    @ApiProperty({type: [GetListingObjectDto]})
     @IsNotEmpty()
     @IsArray()
-    result: GetPropertyObjectDto[];
+    result: GetListingObjectDto[];
 
     @ApiProperty()
     @IsNumber()

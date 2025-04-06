@@ -4,7 +4,7 @@ import { PropertyStatus } from '../../../enums/property-status.enum';
 import { Transform, Type } from 'class-transformer';
 import { FilteredStatus } from '../../../enums/filtered-status.enum';
 
-export class GetPropertiesDto {
+export class GetListingsDto {
   @ApiProperty({ required: false, isArray: true, enum: FilteredStatus })
   @IsEnum(FilteredStatus, { each: true })
   @IsOptional()

@@ -22,10 +22,10 @@ export class Property {
 
     @ApiProperty({required: false})
     @ManyToOne(() => County, (county) => county.properties, {nullable: true})
-    @JoinColumn({ name: 'countyId' })
+    @JoinColumn({name: 'countyId'})
     county?: County;
 
-    @Column({ nullable: true })
+    @Column({nullable: true})
     countyId?: number;
 
     // ???
@@ -94,6 +94,11 @@ export class Property {
     /* GETTING FROM PRECISELY API */
     @ApiProperty({required: false})
     @IsOptional()
+    @Column({name: 'precisely_checked', nullable: true})
+    preciselyChecked?: boolean;
+
+    @ApiProperty({required: false})
+    @IsOptional()
     @Column({name: 'owner_first_name', nullable: true})
     ownerFirstName?: string;
 
@@ -101,6 +106,11 @@ export class Property {
     @IsOptional()
     @Column({name: 'owner_last_name', nullable: true})
     ownerLastName?: string;
+
+    @ApiProperty({required: false})
+    @IsOptional()
+    @Column({name: 'owner_commercial', nullable: true})
+    ownerCommercial?: boolean;
 
     /* GETTING FROM ZILLOW BRIGHT DATA API */
     @ApiProperty({required: false})

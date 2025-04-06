@@ -5,7 +5,7 @@ import {FilteredStatus} from "../../../enums/filtered-status.enum";
 import {statesArray} from "./states.array";
 import {PropertyStatus} from "../../../enums/property-status.enum";
 
-export class GetPropertyObjectDto {
+export class GetListingObjectDto {
     // propertyid + status (comingsoon, forsale, pending)
     @ApiProperty({required: true})
     @IsNotEmpty()
