@@ -1,10 +1,12 @@
 // scrapper.processor.ts
-import {Processor, Process} from '@nestjs/bull';
+import {Process, Processor} from '@nestjs/bull';
 import {Job} from 'bull';
 import {Injectable, Logger} from '@nestjs/common';
 import {ScrapperService} from './scrapper.service';
 import {StartScrapperDto} from "./dto/start-scrapper.dto";
 import {PropertiesService} from "../properties/properties.service";
+import {BrightdataService} from "./brightdata.service";
+import {BrightdataVersion} from "../../enums/brightdata-version.enum";
 
 @Processor('scrapper')
 @Injectable()
@@ -14,6 +16,7 @@ export class ScrapperProcessor {
     constructor(
         private readonly scrapperService: ScrapperService,
         private readonly propertiesService: PropertiesService,
+        private readonly brightdataService: BrightdataService,
     ) {
     }
 
@@ -29,30 +32,34 @@ export class ScrapperProcessor {
             // temporarily, this is only for daily scrapping...
             // for initialScrapping we need to update method runScrapper() to accept ZillowUrls, not only initialScrapper field
 
-            //this.logger.log('Starting runScrapper()...');
+            this.logger.log('Starting runScrapper()...');
             // if initialScrapper is false, it means it is daily regular scrapping
             // regular daily scrapping is sent without data, and it is generating it in runScrapper()
             // runScrapper() is accessing all active counties and grabbing urls from there then sending request to zillow
             // we are generating snapshot.json id and saving it to dynamoDB
             // if request with zillow is successful then we upload json to s3 and update successful log to dynamoDB
             // if request with zillow failed, then we log it to dynamoDB and upload error file to S3
-            //await this.scrapperService.runScrapper(initialScrapper);
-            //this.logger.log('runScrapper() is finished...');
+            await this.scrapperService.runScrapperV2(initialScrapper);
+           this.logger.log('runScrapper() is finished...');
 
             // runFailedScrapper() is checking our dynamoDB for any failed scrapper attempts and creating array with urls
             // then we are sending request to zillow again, if it is successful we update our dynamoDB status to 'ready'
             // and upload S3 raw data with snapshot.json that we take from dynamoDB (key/s3key)
             // if scrapping request to zillow fails again, we just update attempt count to dynamoDB and skip to next url
             // Retry failed scrapper 5 times with the datacenter proxy
-            //for (let i = 0; i < 5; i++) {
-            //    this.logger.log(`Retrying failed scrapper with datacenter proxy, attempt ${i + 1}`);
-            //    await this.scrapperService.runFailedScrapper(initialScrapper, 'datacenter');
-            //}
+
+            for (let i = 0; i < 5; i++) {
+                this.logger.log(`Retrying failed scrapper with datacenter proxy, attempt ${i + 1}`);
+                await this.scrapperService.runFailedScrapper(initialScrapper, 'datacenter');
+            }
+
+
 
             // this runFailedScrapper() with residential proxies is doing the same as one above, just with better success rate
             // Retry failed scrapper 5 times with the residential proxy
             // it is important to check dynamoDB if there is any snapshots.json with status 'failed' after those 10 attempts
             // we should create the endpoint to show that in the future, attempt number and status along with dates
+
             for (let i = 0; i < 5; i++) {
                 this.logger.log(`Retrying failed scrapper with residential proxy, attempt ${i + 1}`);
                 await this.scrapperService.runFailedScrapper(initialScrapper, 'residential');
@@ -70,7 +77,7 @@ export class ScrapperProcessor {
 
             // brightdataEnrichmentTrigger() is checking all new properties that are not enriched and sending request to brightdata
             // after request is sent to brightdata, we receive snapshot_id that we foreach in every property and save to RDS database
-            await this.propertiesService.brightdataEnrichmentTrigger()
+            await this.brightdataService.brightdataEnrichmentTrigger(BrightdataVersion.BRIGHTDATA_DATASET_ID_V2)
 
             // this is the rest of the workflow ******
             // now we need to create a webhook that will take a notification from brightdata when scrapping is done

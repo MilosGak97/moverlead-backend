@@ -13,6 +13,7 @@ import { WebsocketModule } from "./websocket/websocket.module";
 import { PropertyCountiesFailed } from "./entities/property-counties-failed.entity";
 import { ScrapperModule } from "./api/scrapper/scrapper.module";
 import { BullModule } from "@nestjs/bull";
+import { CommonModule } from './api/common/common.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { BullModule } from "@nestjs/bull";
     StripeModule,
     WebsocketModule,
     ScrapperModule,
+    CommonModule,
   ],
 })
 export class AppModule {}

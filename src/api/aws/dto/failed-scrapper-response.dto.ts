@@ -1,7 +1,8 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsNotEmpty, IsString } from "class-validator";
+import {ApiProperty} from "@nestjs/swagger";
+import {IsNotEmpty, IsNumber, IsString} from "class-validator";
+import {Type} from "class-transformer";
 
-export class FailedScrapperResponseDto{
+export class FailedScrapperResponseDto {
     @ApiProperty()
     @IsString()
     @IsNotEmpty()
@@ -15,5 +16,15 @@ export class FailedScrapperResponseDto{
     @ApiProperty()
     @IsNotEmpty()
     @IsString()
+    minPrice: string;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsString()
+    maxPrice: string;
+
+    @ApiProperty()
+    @IsNotEmpty()
+    @IsNumber()
     countyId: string;
 }

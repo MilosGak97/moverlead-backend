@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { EmailService } from "./email.service";
+import { EmailService } from "./services/email.service";
 import { AwsController } from "./aws.controller";
 import { HttpModule } from "@nestjs/axios";
 import { CountyRepository } from "src/repositories/county.repository";

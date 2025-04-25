@@ -25,6 +25,12 @@ export class RegisterDto {
   @IsNotEmpty()
   @IsString()
   @Type(() => String)
+  phoneNumber: string;
+
+  @ApiProperty({ required: true })
+  @IsNotEmpty()
+  @IsString()
+  @Type(() => String)
   companyName: string;
 
   @ApiProperty({ required: true })

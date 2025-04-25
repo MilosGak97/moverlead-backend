@@ -27,6 +27,8 @@ export class DynamoDBService {
         key: string,
         countyId: string,
         zillowUrl: string,
+        minPrice: string,
+        maxPrice: string,
         initialScrapper: boolean,
     ) {
         // Write metadata to DynamoDB for real-time querying
@@ -41,6 +43,8 @@ export class DynamoDBService {
                 test_read: {BOOL: false},
                 attempt_count: {N: "1"},
                 zillow_url: {S: zillowUrl},
+                min_price: {N: minPrice},
+                max_price: {N: maxPrice},
                 initial_scrapper: {BOOL: initialScrapper},
             },
         };
@@ -194,6 +198,8 @@ export class DynamoDBService {
             const failedScrappers = Items.map((item) => ({
                 s3Key: item.s3Key?.S,
                 zillowUrl: item.zillow_url?.S,
+                minPrice: item.min_price?.N,
+                maxPrice: item.max_price?.N,
                 countyId: item.county?.S,
             }));
 
@@ -204,9 +210,11 @@ export class DynamoDBService {
             throw error;
         }
     }
-
+/*
     async checkReadyScrapper(initialScrapper: boolean): Promise<ReadyScrapperResponseDto[] | []> {
         try {
+            console.log("initialScrapper being passed in:", initialScrapper);
+            console.log(typeof initialScrapper)
             const scanParams = {
                 TableName: this.dynamoTableName,
                 FilterExpression: "#st = :status AND #ml = :mlRead AND #is = :initialScrapper",
@@ -217,7 +225,7 @@ export class DynamoDBService {
                 },
                 ExpressionAttributeValues: {
                     ":status": {S: "ready"},
-                    ":mlRead": {BOOL: true},
+                    ":mlRead": {BOOL: false},
                     ":initialScrapper": {BOOL: initialScrapper},
                 },
             };
@@ -247,6 +255,69 @@ export class DynamoDBService {
             throw error;
         }
     }
+
+
+ */
+    async checkReadyScrapper(initialScrapper: boolean): Promise<ReadyScrapperResponseDto[]> {
+        try {
+            const readyScrappers: ReadyScrapperResponseDto[] = [];
+            let ExclusiveStartKey = undefined;
+            const maxScannedItems = 5000; // safety limit
+            let totalScanned = 0;
+            let page = 0;
+
+            do {
+                page++;
+                const scanParams = {
+                    TableName: this.dynamoTableName,
+                    FilterExpression: "#st = :status AND #ml = :mlRead AND #is = :initialScrapper",
+                    ExpressionAttributeNames: {
+                        "#st": "status",
+                        "#ml": "ml_read",
+                        "#is": "initial_scrapper",
+                    },
+                    ExpressionAttributeValues: {
+                        ":status": { S: "ready" },
+                        ":mlRead": { BOOL: false },
+                        ":initialScrapper": { BOOL: initialScrapper },
+                    },
+                    ExclusiveStartKey, // continue from previous page
+                };
+
+                const { Items, LastEvaluatedKey, ScannedCount } = await this.dynamoDbClient.send(
+                    new ScanCommand(scanParams)
+                );
+
+                totalScanned += ScannedCount ?? 0;
+
+                if (Items && Items.length > 0) {
+                    const mapped = Items.map((item) => ({
+                        s3Key: item.s3Key?.S,
+                        countyId: item.county?.S,
+                        date: item.date?.S ? new Date(item.date.S) : undefined,
+                    }));
+                    readyScrappers.push(...mapped);
+                }
+
+                console.log(`📄 Page ${page}: Scanned ${ScannedCount}, Total Scanned So Far: ${totalScanned}`);
+
+                ExclusiveStartKey = LastEvaluatedKey;
+
+                if (totalScanned >= maxScannedItems) {
+                    console.warn(`⚠️ Scan limit of ${maxScannedItems} reached. Stopping early.`);
+                    break;
+                }
+
+            } while (ExclusiveStartKey);
+
+            console.log(`✅ Total ready scrappers found: ${readyScrappers.length}`);
+            return readyScrappers;
+        } catch (error: any) {
+            console.error("❌ Error checking ready scrappers:", error);
+            throw error;
+        }
+    }
+
 
     async markAsDone(key: string) {
         // Parameters for getting the item

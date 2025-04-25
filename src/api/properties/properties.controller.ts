@@ -33,6 +33,8 @@ import {FetchSnapshotDto} from "./dto/fetch-snapshot.dto";
 import {GetListingsResponseDto} from "./dto/get-listings.response.dto";
 import {FilteringDto} from "./dto/filtering-dto";
 import {ListingsExportDto} from "./dto/listings-export.dto";
+import {State} from "../../enums/state.enum";
+import {ActiveStatesResponseDto} from "./dto/active-states-response.dto";
 
 @UseGuards(JwtAuthGuard)
 @Controller("properties")
@@ -48,6 +50,7 @@ export class PropertiesController {
     async getDashboard(
         @UserId() userId: string
     ): Promise<GetDashboardResponseDto> {
+        console.log("🧪 Received userId from decorator:", userId);
         return await this.propertiesService.getDashboard(userId);
     }
 
@@ -76,9 +79,9 @@ export class PropertiesController {
         return await this.propertiesService.listingsExportDetailed(listingsExportDto);
     }
 
-    @Post("listings/export/usps")
     @ApiOperation({summary: "Trigger export action for selected listings with usps needed fields"})
     @ApiOkResponse()
+    @Post("listings/export/usps")
     async listingsExportUSPS(
         @Body() listingsExportDto: ListingsExportDto,
         @Res({passthrough: true}) res: Response,
@@ -96,10 +99,10 @@ export class PropertiesController {
         return await this.propertiesService.listingsExportUsps(listingsExportDto)
     }
 
-    @Post("listings/precisely")
+    @Post("listings/get-homeowners")
     @ApiOperation({summary: "Trigger export action for selected listings with usps needed fields"})
     @ApiOkResponse()
-    async checkPrecisely(
+    async getHomeowners(
         @Body() listingsExportDto: ListingsExportDto,
     ) {
         return await this.propertiesService.checkPrecisely(listingsExportDto)
@@ -149,6 +152,13 @@ export class PropertiesController {
         );
     }
 
+    @Get('active-states')
+    @ApiOperation({summary: "Get all active states"})
+    @ApiOkResponse({type: [StateResponseDto]})
+    async getActiveStates(@UserId() userId: string):Promise<StateResponseDto[]>{
+        return await this.propertiesService.getActiveStatesByUser(userId)
+    }
+
     // A simple POST endpoint to process CSV from a static file path
     @Public()
     @Post("webhook")
@@ -193,9 +203,13 @@ export class PropertiesController {
         console.log("webhookDTO: " + webhookDto.daysOnZillow);
         console.log("Snapshot ID: " + body.snapshot_id);
     }
-
+/*
     @Post('brightdata-enrichment-trigger')
     async brightdataEnrichment() {
-        return this.propertiesService.brightdataEnrichmentTrigger();
+        return this.propertiesService.brightdataEnrichmentTriggerV2();
     }
+
+ */
+
+
 }

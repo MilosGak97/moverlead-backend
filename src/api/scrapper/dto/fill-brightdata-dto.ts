@@ -9,53 +9,6 @@ export class FillBrightdataDto {
     @IsString()
     zpid: string;
 
-    @ApiProperty({ required: true })
-    @IsBoolean()
-    brightdataEnriched: boolean;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsString()
-    streetAddress?: string;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsString()
-    zipcode?: string;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsString()
-    city?: string;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsString()
-    state?: string;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsNumber()
-    @Type(() => Number)
-    bedrooms?: number;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsNumber()
-    @Type(() => Number)
-    bathrooms?: number;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsNumber()
-    @Type(() => Number)
-    price?: number;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsString()
-    homeType?: string;
-
     @ApiProperty({ required: false })
     @IsOptional()
     @IsString()
@@ -80,33 +33,6 @@ export class FillBrightdataDto {
     @IsOptional()
     @IsString()
     brokeragePhone?: string;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsNumber()
-    latitude?: number;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsNumber()
-    longitude?: number;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsNumber()
-    @Type(() => Number)
-    livingAreaValue?: number;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsNumber()
-    @Type(() => Number)
-    daysOnZillow?: number;
-
-    @ApiProperty({ required: false })
-    @IsOptional()
-    @IsString()
-    propertyTypeDimension?: string;
 
     @ApiProperty({ required: false })
     @IsOptional()

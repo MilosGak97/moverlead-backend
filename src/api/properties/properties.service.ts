@@ -1,8 +1,11 @@
 import {
-    BadRequestException, Body, forwardRef,
+    BadRequestException,
+    forwardRef,
     HttpException,
-    HttpStatus, Inject,
-    Injectable, StreamableFile,
+    HttpStatus,
+    Inject,
+    Injectable,
+    StreamableFile,
 } from "@nestjs/common";
 import {PropertyRepository} from "../../repositories/property.repository";
 import {UserRepository} from "../../repositories/user.repository";
@@ -24,7 +27,6 @@ import {statesArray} from "./dto/states.array"; // Correct ESModule-style import
 import {CreatePropertyDto} from "./dto/create-property.dto";
 import {County} from "src/entities/county.entity";
 import {In, IsNull} from "typeorm";
-import {ZillowDataDto} from "../scrapper/dto/zillow-data.dto";
 import {Property} from "../../entities/property.entity";
 import {ScrapperService} from "../scrapper/scrapper.service";
 import {FillBrightdataDto} from "../scrapper/dto/fill-brightdata-dto";
@@ -34,6 +36,9 @@ import {ListingsExportDto} from "./dto/listings-export.dto";
 import {GetListingsDto} from "./dto/get-listings.dto";
 import {Parser} from "json2csv";
 import axios from "axios";
+import {ZillowDataV2Dto} from "../scrapper/dto/zillow-data-v2.dto";
+import {FillPropertyInfoDto} from "../scrapper/dto/fill-property-info.dto";
+import {BrightdataVersion} from "../../enums/brightdata-version.enum";
 
 @Injectable()
 export class PropertiesService {
@@ -56,16 +61,25 @@ export class PropertiesService {
     }
 
     async getDashboard(userId: string): Promise<GetDashboardResponseDto> {
+
+
         // Step 1: Get user from DB to access stripeId
         const user = await this.userRepository.findOneBy({id: userId});
 
+        console.log(`[getDashboard] userId: ${userId}, stripeId: ${user?.stripeId}`);
 
         // lets get now priceids (county) and when user was subscribed to that county
         // date to and date from
+
         const subscriptionsArray = await this.stripeService.getAllUserSubscriptions(user.stripeId);
 
-        if (subscriptionsArray.length == 0) {
-            throw new BadRequestException('User never had any subscriptions')
+
+        if (subscriptionsArray.length === 0) {
+            return {
+                lastMonthCount: 0,
+                thisMonthCount: 0,
+                todayCount: 0,
+            }
         }
 
 
@@ -103,17 +117,34 @@ export class PropertiesService {
         // stripe user id is created by stripe while checkout and saved in RDS DB
         const user = await this.userRepository.findOneBy({id: userId});
 
+        if(userId === '9f19f3b8-9892-4f5b-af57-b350d933424c'){
+            const counties: County[] = await this.getChicagoCounties();
+            console.log(counties)
+            return await this.propertyRepository.getListingsChicago(
+                getListingsDto,
+                counties
+            );
+        }
 
         // lets get now priceids (county) and when user was subscribed to that county
         // date to and date from
+        //if()
         const subscriptionsArray = await this.stripeService.getAllUserSubscriptions(user.stripeId);
 
-        if (subscriptionsArray.length == 0) {
-            throw new BadRequestException('User never had any subscriptions')
+        if (subscriptionsArray.length === 0) {
+            return {
+                result: [],
+                totalRecords: 0,
+                currentPage: 0,
+                totalPages: 0,
+                limit: 0,
+                offset: 0,
+            }
+            //throw new BadRequestException('User never had any subscriptions')
         }
 
-
         const userSubscriptions: UserSubscriptionsDto[] = [];
+
 
         for (const sub of subscriptionsArray) {
             const county = await this.countyRepository.findOne({
@@ -183,7 +214,7 @@ export class PropertiesService {
         const fields = [
             'owner_fullname',
             'current_resident',
-            'streetAddress',
+            'street_address',
             'city',
             'state',
             'zipcode'
@@ -201,13 +232,25 @@ export class PropertiesService {
         // Step 1: Get user from DB to access stripeId
         const user = await this.userRepository.findOneBy({id: userId});
 
+        if(user.id === '9f19f3b8-9892-4f5b-af57-b350d933424c'){
+            const counties: County[] = await this.getChicagoCounties();
+            return await this.propertyRepository.filteringChicago(filteringDto, counties)
+        }
 
         // let's get now priceids (county) and when user was subscribed to that county
         // date to and date from
         const subscriptionsArray = await this.stripeService.getAllUserSubscriptions(user.stripeId);
 
         if (subscriptionsArray.length == 0) {
-            throw new BadRequestException('User never had any subscriptions')
+            return {
+                result: [],
+                totalRecords: 0,
+                currentPage: 0,
+                totalPages: 0,
+                limit: 0,
+                offset: 0
+            }
+            //throw new BadRequestException('User never had any subscriptions')
         }
 
 
@@ -270,6 +313,7 @@ export class PropertiesService {
             customer: stripeUserId,
             status: getSubscriptionsDto.stripeSubscriptionStatus,
         });
+        console.log("CONSOLE LOG SUBSCRIPTION", stripeSubscriptionData.data[0].items.data[0].price)
 
         if (stripeSubscriptionData && stripeSubscriptionData.data.length > 0) {
             for (const subscription of stripeSubscriptionData.data) {
@@ -306,9 +350,10 @@ export class PropertiesService {
         }
     }
 
-    async getZillowUrlsActiveSubscription(): Promise<ZillowDataDto[]> {
+
+    async getAllActiveCounties(): Promise<County[]> {
         // check active subscriptions
-        const subscriptions = await this.stripeService.getActiveSubscriptions();
+        const subscriptions = await this.stripeService.getAllActiveSubscriptions();
         if (!subscriptions) {
             return;
         }
@@ -329,21 +374,115 @@ export class PropertiesService {
         }
         // Create an array of objects with both countyId and zillowLink
         return counties
-            .flatMap((county) =>
-                county.zillowLinks.map((url) => ({
-                    countyId: county.id,
-                    zillowUrl: url,
-                }))
-            )
-            .filter((item) => item.zillowUrl != null);
+    }
 
+
+    async getAllActiveCountiesByUser(stripeId: string): Promise<County[]> {
+        // check active subscriptions
+        const subscriptions = await this.stripeService.getAllActiveSubscriptions();
+        if (!subscriptions) {
+            return;
+        }
+
+        const priceIds = [
+            ...new Set(
+                subscriptions.data.flatMap((subscription) =>
+                    subscription.items.data.map((item) => item.price.id)
+                )
+            ),
+        ];
+
+        const counties: County[] = await this.countyRepository.find({
+            where: {priceId: In(priceIds)},
+        });
+        if (counties.length === 0) {
+            throw new HttpException("No county found", HttpStatus.BAD_REQUEST);
+        }
+        // Create an array of objects with both countyId and zillowLink
+        return counties
+    }
+
+    async getChicagoCounties(){
+        const counties = [
+            '213a67cb-ea78-4b77-b178-b1b0da09d035', // Cook County
+            'b271f13b-04ff-4d32-bfc0-74e650c51150', // Lake County
+            'c840a95a-9523-4b34-b9ad-9e358712ab02', // McHenry County
+            '9e159cf0-ee1a-4e08-8de0-1b1273f566ca', // DuPage County
+            '7e9085b6-7882-4982-8b51-834869deb0c2', // Kane County
+            '7607395d-c5aa-4482-931a-6d26aabf62ec', // Will County
+        ];
+
+       return await this.countyRepository.find({
+            where: {id: In(counties)},
+        });
+    }
+
+    async getActiveStatesByUser(userId:string){
+        if(userId === '9f19f3b8-9892-4f5b-af57-b350d933424c'){
+            return;
+        }
+        const user = await this.userRepository.findOneBy({ id: userId });
+        if(!user){
+            throw new HttpException('User is not found', HttpStatus.BAD_REQUEST)
+        }
+
+
+        if(!user.stripeId){
+            return;
+        }
+        // check active subscriptions
+        const subscriptions: Stripe.ApiList<Stripe.Subscription>  = await this.stripeService.getAllActiveSubscriptionsByUser(user.stripeId);
+        if (!subscriptions) {
+            return;
+        }
+
+
+        const priceIds = [
+            ...new Set(
+                subscriptions.data.flatMap((subscription) =>
+                    subscription.items.data.map((item) => item.price.id)
+                )
+            ),
+        ];
+
+        const counties: County[] = await this.countyRepository.find({
+            where: {priceId: In(priceIds)},
+        });
+        if (counties.length === 0) {
+            throw new HttpException("No county found", HttpStatus.BAD_REQUEST);
+        }
+
+        const uniqueStatesAbbreviation = [...new Set(counties.map((item) => item.state))];
+
+        const stateResponse: StateResponseDto[] = uniqueStatesAbbreviation.map((abbr) => {
+            const stateInfo = statesArray.find((state) => state.abbreviation === abbr);
+
+            return {
+                abbreviation: abbr,
+                name: stateInfo?.name ?? 'Unknown',
+            };
+        });
+
+        return stateResponse;
+    }
+
+
+    async getTestCounties(){
+        const countiesIds = []
     }
 
     async findProperty(zpid: string) {
         return await this.propertyRepository.findOneBy({zpid})
     }
 
-    async checkPropertyDaily(property: Property, currentStatus: string, initialScrapper: boolean, date: Date) {
+    async checkPropertyDaily(property: Property, currentStatus: string, initialScrapper: boolean, date: Date, raw: any) {
+
+        console.log("ZPID:", property.zpid)
+        console.log("DATE:", date)
+        console.log("CURRENT STATUS:", currentStatus)
+        console.log("PENDING DATE:",property.pendingDate)
+        console.log("COMING SOON DATE:",property.comingSoonDate)
+        console.log("FOR SALE DATE:",property.forSaleDate)
 
         // Flag to determine if any status has changed
         let statusChanged = false;
@@ -369,6 +508,25 @@ export class PropertiesService {
             console.log(`NO STATUS CHANGES: ${property.zpid}, Next.`)
             return;
         }
+
+        const data: FillPropertyInfoDto = {
+            streetAddress: raw.hdpData.homeInfo.streetAddress,
+            zipcode: raw.hdpData.homeInfo.zipcode,
+            city: raw.hdpData.homeInfo.city,
+            state: raw.hdpData.homeInfo.state,
+            bedrooms: raw.hdpData.homeInfo.bedrooms,
+            bathrooms: raw.hdpData.homeInfo.bathrooms,
+            price: raw.hdpData.homeInfo.price,
+            homeType: raw.hdpData.homeInfo.homeType,
+            brokerageName: raw.brokerName,
+            latitude: raw.hdpData.homeInfo.latitude,
+            longitude: raw.hdpData.homeInfo.longitude,
+            livingAreaValue: raw.hdpData.homeInfo.livingArea,
+            timeOnZillow: raw.timeOnZillow,
+        };
+
+        // Assign all DTO fields (overwrites any existing fields)
+        Object.assign(property, data);
 
         // Ensure initialScrape is marked as false
         property.initialScrape = initialScrapper
@@ -397,6 +555,20 @@ export class PropertiesService {
         newProperty.county = county;
         newProperty.initialScrape = initialScrape;
 
+        newProperty.streetAddress = rawData.hdpData.homeInfo.streetAddress
+        newProperty.zipcode = rawData.hdpData.homeInfo.zipcode
+        newProperty.city = rawData.hdpData.homeInfo.city
+        newProperty.state = rawData.hdpData.homeInfo.state
+        newProperty.bedrooms = rawData.hdpData.homeInfo.bedrooms
+        newProperty.bathrooms = rawData.hdpData.homeInfo.bathrooms
+        newProperty.price = rawData.hdpData.homeInfo.price
+        newProperty.homeType = rawData.hdpData.homeInfo.homeType
+        newProperty.brokerageName = rawData.brokerName
+        newProperty.latitude = rawData.hdpData.homeInfo.latitude
+        newProperty.longitude = rawData.hdpData.homeInfo.longitude
+        newProperty.livingAreaValue = rawData.hdpData.homeInfo.livingArea
+        newProperty.timeOnZillow = rawData.timeOnZillow
+
         // Set the appropriate status date
         if (rawData.rawHomeStatusCd === "Pending") {
             newProperty.pendingDate = new Date();
@@ -410,90 +582,158 @@ export class PropertiesService {
         await this.propertyRepository.createProperty(newProperty);
     }
 
-    async brightdataEnrichmentTrigger() {
+    async getEnrichmentUrls(): Promise<{ url: string; }[]> {
         const properties = await this.propertyRepository.find({
             where: {
                 initialScrape: false,
-                brightdataEnriched: IsNull(),
+                enriched: IsNull() || false,
             },
         });
 
         if (properties.length == 0) {
             return null;
         }
+        console.log("NUMBER OF PROPERTIES THAT NEED TO BE SCRAPPED: " + properties.length);
+        console.log()
 
         const urls = properties.map((property) => ({
             url: `https://www.zillow.com/homedetails/${property.zpid}_zpid/`,
         }));
-
-        const brightdataSnapshot: string = await this.scrapperService.brightdataSnapshotTrigger(urls)
-
-        // Set the snapshot on each property and save
-        for (const property of properties) {
-            property.brightdataSnapshot = brightdataSnapshot;
-        }
-
-        await this.propertyRepository.save(properties);
+        console.log("URLS: ", urls);
+        return urls;
     }
 
-    async fillBrightdata(fillBrightdataDto: FillBrightdataDto) {
+    /*
+        async brightdataEnrichmentTriggerV2() {
+            const properties = await this.propertyRepository.find({
+                where: {
+                    initialScrape: false,
+                    brightdataEnriched: IsNull(),
+                },
+            });
+
+            if (properties.length == 0) {
+                return null;
+            }
+
+            const urls = properties.map((property) => ({
+                url: `https://www.zillow.com/homedetails/${property.zpid}_zpid/`,
+            }));
+
+            const brightdataSnapshot: string = await this.scrapperService.brightdataSnapshotTriggerV2(urls)
+
+            // Set the snapshot on each property and save
+            for (const property of properties) {
+                property.brightdataSnapshot = brightdataSnapshot;
+            }
+
+            await this.propertyRepository.save(properties);
+        }
+    */
+    async fillBrightdata(fillBrightdataDto: FillBrightdataDto, brightdataVersion: BrightdataVersion) {
         const {zpid} = fillBrightdataDto;
         console.log(`Filling with brightdata info: ${zpid}`)
 
         let property = await this.propertyRepository.findOne({where: {zpid}});
 
         if (!property) {
-            // If not found, create new property
-            //property = this.propertyRepository.create({zpid});
             return;
+        }
+
+        if (brightdataVersion === BrightdataVersion.BRIGHTDATA_DATASET_ID_V1) {
+            property.enrichedBrightdataV1 = true
+        }
+        if (brightdataVersion === BrightdataVersion.BRIGHTDATA_DATASET_ID_V2) {
+            property.enrichedBrightdataV2 = true
         }
 
         // Assign all DTO fields (overwrites any existing fields)
         Object.assign(property, fillBrightdataDto);
-        console.log('Next...')
+        property.enriched = true;
+        console.log(`Property ${fillBrightdataDto.zpid} is enriched with Brightdata...`)
         return await this.propertyRepository.save(property);
+    }
 
+    async fillHasdata(fillBrightdataDto: FillBrightdataDto,) {
+        const {zpid} = fillBrightdataDto;
+        console.log(`Filling with brightdata info: ${zpid}`)
+
+        let property = await this.propertyRepository.findOne({where: {zpid}});
+
+        if (!property) {
+            return;
+        }
+        property.enrichedHasdata = true;
+        property.enriched = true;
+        // Assign all DTO fields (overwrites any existing fields)
+        Object.assign(property, fillBrightdataDto);
+        console.log(`Property ${fillBrightdataDto.zpid} is enriched with Hasdata...`)
+        return await this.propertyRepository.save(property);
+    }
+
+
+    async getCountyZillowData(id: string) {
+        const county = await this.countyRepository.findOne({where: {id}});
+        if (!county) {
+            throw new BadRequestException("Could not find county with provided id")
+        }
+        return {
+            zillowLink: county.zillowLink,
+            zillowDefineInput: county.zillowDefineInput
+        }
     }
 
     /* ---------------- DELETE FROM HERE AFTER IMPROVING PRECISELY -----------------------*/
 
 
-    // Helper to get a valid token; fetch a new one if missing or expired.
     private async getToken(): Promise<string> {
-        if (!this.accessTokenPrecisely || Date.now() > this.tokenExpirationTime) {
-            await this.fetchToken();
+        const key = process.env.PRECISELY_API_KEY;
+        const secret = process.env.PRECISELY_API_SECRET;
+
+        // If accessToken is not set OR token is expired OR invalid format (e.g. server rebooted)
+        if (
+            !this.accessTokenPrecisely ||
+            !this.tokenExpirationTime ||
+            Date.now() > this.tokenExpirationTime
+        ) {
+            await this.fetchToken(key, secret);
         }
+
         return this.accessTokenPrecisely;
     }
-
-    // Fetch a new token from the Precisely API.
-    private async fetchToken(): Promise<void> {
-        const key = 'QKs8U4IfxnfSAUXZCA9ttMBBOzS6rIWW';
-        const secret = 'L4VZlKATR5wy56lo';
+    private async fetchToken(key: string, secret: string): Promise<void> {
         const encodedCredentials = Buffer.from(`${key}:${secret}`).toString('base64');
 
-        const config = {
-            headers: {
-                'Authorization': `Basic ${encodedCredentials}`,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        };
-
-        const data = new URLSearchParams({grant_type: 'client_credentials'});
-
         try {
-            const response = await axios.post('https://api.precisely.com/oauth/token', data, config);
-            this.accessTokenPrecisely = response.data.access_token;
-            // Set expiration time (with a 5-minute buffer before actual expiration)
-            this.tokenExpirationTime = Date.now() + (response.data.expires_in * 1000) - (5 * 60 * 1000);
-            console.log('Fetched new access token:', this.accessTokenPrecisely);
-        } catch (error) {
-            console.error(
-                'Error fetching access token:',
-                error.response ? error.response.data : error.message
+            const response = await axios.post(
+                'https://api.precisely.com/oauth/token',
+                new URLSearchParams({ grant_type: 'client_credentials' }),
+                {
+                    headers: {
+                        Authorization: `Basic ${encodedCredentials}`,
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                },
             );
+
+            const { access_token, expiresIn } = response.data;
+
+            if (!access_token || !expiresIn) {
+                throw new Error('❌ Invalid Precisely token response');
+            }
+
+
+            this.accessTokenPrecisely = access_token;
+            this.tokenExpirationTime = Date.now() + expiresIn * 1000 - 5 * 60 * 1000;
+
+            console.log('[Precisely] ✅ Token refreshed. Expires in (s):', expiresIn);
+        } catch (error) {
+            const errMsg = error?.response?.data || error.message;
+            console.error('❌ [Precisely] Failed to fetch token:', errMsg);
+            throw new Error('Precisely token fetch failed');
         }
     }
+
 
     async checkPrecisely(
         listingsExportDto: ListingsExportDto) {
@@ -502,14 +742,14 @@ export class PropertiesService {
 
         const properties: Property[] = await this.propertyRepository.find({where: {id: In(uuids)}})
 
-        if(properties.length == 0) {
+        if (properties.length == 0) {
             throw new BadRequestException('There are no properties found in database')
         }
         // Process each property to enrich with owner information.
         for (const property of properties) {
             // If already precisely checked, do not call the API.
             if (property.preciselyChecked) {
-              continue; // Skip further enrichment.
+                continue; // Skip further enrichment.
             }
 
             // Not checked yet – run the Precisely API check.
@@ -526,6 +766,8 @@ export class PropertiesService {
                         },
                     }
                 );
+
+
 
                 const owners = response.data.propertyAttributes?.owners;
                 if (owners && owners.length > 0) {

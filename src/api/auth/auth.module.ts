@@ -8,7 +8,7 @@ import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from './local.strategy';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
-import { EmailService } from '../aws/email.service';
+import { EmailService } from '../aws/services/email.service';
 
 @Module({
   imports: [

@@ -6,6 +6,8 @@ import { PropertiesModule } from "../properties/properties.module";
 import { AwsModule } from "../aws/aws.module";
 import { BullModule } from "@nestjs/bull";
 import { ScrapperProcessor } from "./scrapper.processor";
+import {BrightdataService} from "./brightdata.service";
+import {HasdataService} from "./hasdata.service";
 
 @Module({
   imports: [
@@ -17,7 +19,7 @@ import { ScrapperProcessor } from "./scrapper.processor";
     }),
   ],
   controllers: [ScrapperController],
-  providers: [ScrapperService, ScrapperProcessor],
+  providers: [ScrapperService, ScrapperProcessor, BrightdataService, HasdataService],
   exports: [ScrapperService],
 })
 export class ScrapperModule {}

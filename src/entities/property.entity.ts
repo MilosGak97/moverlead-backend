@@ -9,7 +9,7 @@ import {
 } from 'typeorm';
 import {ApiProperty} from '@nestjs/swagger';
 import {Type} from 'class-transformer';
-import {IsBoolean, IsDate, IsNotEmpty, IsOptional} from 'class-validator';
+import {IsBoolean, IsDate, IsNotEmpty, IsNumberString, IsOptional} from 'class-validator';
 import {FilteredStatus} from '../enums/filtered-status.enum';
 import {County} from './county.entity';
 import {User} from './user.entity';
@@ -51,6 +51,7 @@ export class Property {
     /* FILLED OUT BY OUR SCRAPPER */
     @ApiProperty({required: false})
     @Type(() => String)
+    @IsNumberString()
     @Column({nullable: true})
     zpid: string;
 
@@ -116,10 +117,51 @@ export class Property {
     @ApiProperty({required: false})
     @IsOptional()
     @IsBoolean()
+    @Column({name: 'enriched', nullable: true})
+    enriched?: boolean;
+
+    // Bright data old  API
+    @ApiProperty({required: false})
+    @IsOptional()
+    @IsBoolean()
+    @Column({name: 'enriched_brightdataV1', nullable: true})
+    enrichedBrightdataV1?: boolean;
+
+    // getting it when sending request to brightdata
+    @ApiProperty({required: false})
+    @IsOptional()
+    @Column({name: 'brightdata_snapshotV1', nullable: true})
+    brightdataSnapshotV1?: string;
+
+    // Bright data full property information API
+    @ApiProperty({required: false})
+    @IsOptional()
+    @IsBoolean()
+    @Column({name: 'enriched_brightdataV2', nullable: true})
+    enrichedBrightdataV2?: boolean;
+
+
+    @ApiProperty({required: false})
+    @IsOptional()
+    @Column({name: 'brightdata_snapshotV2', nullable: true})
+    brightdataSnapshotV2?: string;
+
+    // Hasdata API
+    @ApiProperty({required: false})
+    @IsOptional()
+    @IsBoolean()
+    @Column({name: 'enriched_hasdata', nullable: true})
+    enrichedHasdata?: boolean;
+
+
+    // depreceated
+    @ApiProperty({required: false})
+    @IsOptional()
+    @IsBoolean()
     @Column({name: 'brightdata_enriched', nullable: true})
     brightdataEnriched?: boolean;
 
-    // getting it when sending request to brightdata
+    // depreceated
     @ApiProperty({required: false})
     @IsOptional()
     @Column({name: 'brightdata_snapshot', nullable: true})
@@ -166,10 +208,11 @@ export class Property {
 
     // price
     @ApiProperty({required: false})
-    @Type(() => Number)
+    @Type(() => String)
     @IsOptional()
-    @Column({nullable: true, type: 'float'})
-    price?: number;
+    @IsNumberString()
+    @Column({nullable: true})
+    price?: string;
 
     // home_type
     @ApiProperty({required: false})
@@ -211,29 +254,40 @@ export class Property {
     // longitude
     @ApiProperty({required: false})
     @IsOptional()
-    @Column({type: 'float', nullable: true})
-    longitude?: number;
+    @Type(() => String)
+    @Column({nullable: true})
+    longitude?: string;
 
     // latitude
     @ApiProperty({required: false})
     @IsOptional()
-    @Column({type: 'float', nullable: true})
-    latitude?: number;
+    @Type(() => String)
+    @Column({ nullable: true})
+    latitude?: string;
 
 
     // living_area_value
     @ApiProperty({required: false})
-    @Type(() => Number)
+    @Type(() => String)
     @IsOptional()
-    @Column({name: 'living_area_value', nullable: true, type: 'float'})
-    livingAreaValue?: number;
+    @IsNumberString()
+    @Column({name: 'living_area_value', nullable: true})
+    livingAreaValue?: string;
 
     // days_on_zillow
     @ApiProperty({required: false})
     @Type(() => Number)
     @IsOptional()
-    @Column({name: 'days_on_zillow', nullable: true})
+    @Column({name: 'days_on_zillow', nullable: true, type: 'float'})
     daysOnZillow?: number;
+
+    // time on zillow
+    @ApiProperty({required: false})
+    @Type(() => String)
+    @IsOptional()
+    @IsNumberString()
+    @Column({name: 'time_on_zillow', nullable: true})
+    timeOnZillow?: string; //
 
     // ??
     @ApiProperty({required: false})
@@ -252,6 +306,8 @@ export class Property {
     @IsOptional()
     @Column({name: 'photo_count', nullable: true})
     photoCount?: number; // photoCount
+
+
 
     // original_photos.[0-foreach].mixed_sources.jpeg.[0-static].url
     @ApiProperty({required: false})

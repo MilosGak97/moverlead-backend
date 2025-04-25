@@ -83,7 +83,24 @@ export class County {
   @Column({ name: 'zillow_links', type: 'simple-array', nullable: true })
   zillowLinks?: string[];
 
-  @ApiProperty()
+    @ApiProperty({required: false})
+    @IsString()
+    @IsOptional()
+    @Column({name: 'zillow_link', nullable: true})
+    zillowLink?: string;
+
+
+    @ApiProperty({
+        required: false,
+        isArray: true,
+
+    })
+    @IsOptional()
+    @Column({ name: 'zillow_define_input', type: 'json', nullable: true }) // or type: 'simple-json' for MySQL/SQLite
+    zillowDefineInput?: { minPrice: number; maxPrice: number; resultNumber: number }[];
+
+
+    @ApiProperty()
   @CreateDateColumn()
   createdAt: Date;
 

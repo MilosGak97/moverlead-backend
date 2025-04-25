@@ -1,5 +1,5 @@
 import {ApiProperty} from "@nestjs/swagger";
-import {IsArray, IsEnum, IsNotEmpty, IsNumber, IsNumberString, IsOptional, IsString} from "class-validator";
+import {IsArray, IsDate, IsEnum, IsNotEmpty, IsNumber, IsNumberString, IsOptional, IsString} from "class-validator";
 import {Type} from "class-transformer";
 import {FilteredStatus} from "../../../enums/filtered-status.enum";
 import {statesArray} from "./states.array";
@@ -13,18 +13,22 @@ export class GetListingObjectDto {
     @Type(() => String)
     id: string;
 
+    @ApiProperty()
+    @IsOptional()
+    @IsString()
+    @Type(() => String)
+    fullName: string;
+
     @ApiProperty({required: false, enum: FilteredStatus})
     @IsOptional()
     @IsEnum(FilteredStatus)
     filteredStatus: FilteredStatus;
 
-    // create this based on comingsoondate, forsaledate, pendingdate fields
     @ApiProperty({required: true, enum: PropertyStatus})
     @IsNotEmpty()
     @IsEnum(PropertyStatus)
     propertyStatus: PropertyStatus;
 
-    // create this based on comingsoondate, forsaledate, pendingdate fields
     @ApiProperty({required: true})
     @IsNotEmpty()
     @IsString()
@@ -54,9 +58,9 @@ export class GetListingObjectDto {
 
     @ApiProperty({required: false})
     @IsOptional()
-    @IsNumber()
-    @Type(() => Number)
-    price: number;
+    @IsString()
+    @Type(() => String)
+    price: string;
 
     @ApiProperty({required: true})
     @IsString()
@@ -72,6 +76,7 @@ export class GetListingObjectDto {
     @ApiProperty({required: false})
     @IsOptional()
     @IsString()
+    @Type(() => String)
     realtorPhone: string;
 
     @ApiProperty({required: false})
@@ -82,5 +87,6 @@ export class GetListingObjectDto {
     @ApiProperty({required: false})
     @IsOptional()
     @IsString()
+    @Type(() => String)
     brokeragePhone: string;
 }

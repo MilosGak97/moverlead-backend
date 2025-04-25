@@ -69,8 +69,15 @@ export class StripeService {
         }
     }
 
-    async getActiveSubscriptions() {
+    async getAllActiveSubscriptions() {
         return this.stripe.subscriptions.list({
+            status: "active",
+        });
+    }
+
+    async getAllActiveSubscriptionsByUser(stripeCustomerId: string) {
+        return this.stripe.subscriptions.list({
+            customer: stripeCustomerId,
             status: "active",
         });
     }
@@ -78,6 +85,47 @@ export class StripeService {
     // this method gives us a priceIds in array of all active subscriptions from this user
     // then we can use priceIds to get counties
     async getAllUserSubscriptions(stripeCustomerId: string) {
+        if (!stripeCustomerId || typeof stripeCustomerId !== 'string' || stripeCustomerId.trim().length === 0) {
+            return [];
+            //throw new Error('Stripe customer ID is missing or invalid.');
+        }
+
+        try {
+            const allSubs = await this.stripe.subscriptions.list({
+                customer: stripeCustomerId,
+                status: 'all',
+            });
+
+            const countySubscriptions: {
+                priceId: string;
+                startDate: number;
+                endDate: number;
+            }[] = [];
+
+            for (const sub of allSubs.data) {
+                const startDate = sub.current_period_start;
+                const endDate = sub.current_period_end;
+
+                for (const item of sub.items.data) {
+                    countySubscriptions.push({
+                        priceId: item.price.id,
+                        startDate,
+                        endDate,
+                    });
+                }
+            }
+
+            return countySubscriptions;
+        } catch (error) {
+            console.error(`❌ Error fetching subscriptions for ${stripeCustomerId}:`, error);
+            throw new Error('Could not fetch subscriptions from Stripe.');
+        }
+    }
+    /*
+    async getAllUserSubscriptions(stripeCustomerId: string) {
+
+
+
         try {
             // Step 1: Get all subscriptions (with items)
             const allSubs = await this.stripe.subscriptions.list({
@@ -110,7 +158,7 @@ export class StripeService {
             throw new Error('Could not fetch subscriptions from Stripe.');
         }
     }
-
+*/
 
     // AFTER THE PAYMENT IS MADE
     async processWebhook(payload: any, sig: string) {

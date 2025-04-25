@@ -3,6 +3,11 @@ import { IsOptional, IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class PatchCompanyDto {
+  @ApiProperty({required: false})
+  @IsOptional()
+  @IsString()
+  companyName: string;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
